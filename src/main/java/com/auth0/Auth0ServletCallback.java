@@ -1,6 +1,23 @@
 package com.auth0;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static java.util.Arrays.asList;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -12,17 +29,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.Charset;
-import java.util.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Auth0ServletCallback extends HttpServlet {
 
@@ -76,6 +83,22 @@ public class Auth0ServletCallback extends HttpServlet {
         return authorizationCode;
     }
 
+    private static String readParameter(String parameter, ServletConfig config) {
+        String first = config.getInitParameter(parameter);
+        if(hasValue(first)) {
+            return first;
+        }
+        final String second = config.getServletContext().getInitParameter(parameter);
+        if(hasValue(second)) {
+            return second;
+        }
+        throw new IllegalArgumentException(parameter + " needs to be defined");
+    }
+
+    private static boolean hasValue(String value) {
+        return value != null && value.trim().length() > 0;
+    }
+
     /**
      * Fetch properties to be used. User is encourage to override this method.
      *
@@ -97,57 +120,13 @@ public class Auth0ServletCallback extends HttpServlet {
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
-        redirectOnSuccess = config.getInitParameter("auth0.redirect_on_success");
+        redirectOnSuccess = readParameter("auth0.redirect_on_success", config);
 
-        if (redirectOnSuccess == null) {
-            throw new IllegalArgumentException("auth0.redirect_on_success parameter needs to be defined");
+        redirectOnFail = readParameter("auth0.redirect_on_error", config);
+
+        for(String param : asList("auth0.client_id", "auth0.client_secret", "auth0.domain")) {
+            properties.put(param, readParameter(param, config));
         }
-
-        redirectOnFail = config.getInitParameter("auth0.redirect_on_error");
-
-        if (redirectOnFail == null) {
-            throw new IllegalArgumentException("auth0.redirect_on_error parameter needs to be defined");
-        }
-
-        Map<String, Boolean> requiredParametersChecklist = new HashMap<String, Boolean>();
-        StringBuilder missingParameters = new StringBuilder();
-        String [] requiredParametersName = {
-                "auth0.client_id", "auth0.client_secret",
-                "auth0.domain"};
-
-        for (String requiredParameterName : requiredParametersName) {
-            requiredParametersChecklist.put(requiredParameterName, false);
-        }
-
-        Enumeration initParameterNames = getServletContext().getInitParameterNames();
-        while (initParameterNames.hasMoreElements()) {
-            String key = (String) initParameterNames.nextElement();
-            String value = getServletContext().getInitParameter(key);
-
-            properties.put(key, value);
-
-            requiredParametersChecklist.put(key, true);
-        }
-
-        for (Map.Entry<String, Boolean> entry : requiredParametersChecklist.entrySet()) {
-            String key = entry.getKey();
-            Boolean value = entry.getValue();
-            if (!value) {
-                if (missingParameters.length() == 0) {
-                    missingParameters.append("Error: The following required ServletContext parameters where not found: ");
-                }
-                missingParameters.append(key);
-                missingParameters.append(", ");
-            }
-        }
-
-        if (missingParameters.length() > 0) {
-            // Removing last ", "
-            missingParameters.setLength(missingParameters.length() - 2);
-
-            missingParameters.append(". They should be present in web.xml in a <context-param> tag.");
-        }
-
     }
 
     @Override
