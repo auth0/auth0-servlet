@@ -32,6 +32,7 @@ import static java.util.Arrays.asList;
 public class Auth0ServletCallback extends HttpServlet {
 
     private Properties properties = new Properties();
+    private boolean useSystemDefaultProxy = false;
     private String redirectOnSuccess;
     private String redirectOnFail;
 
@@ -55,7 +56,7 @@ public class Auth0ServletCallback extends HttpServlet {
 
     protected void onSuccess(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         // Redirect user to home
-        resp.sendRedirect(redirectOnSuccess);
+        resp.sendRedirect(req.getContextPath() + redirectOnSuccess);
     }
 
     private URI getURI(Properties properties) {
@@ -123,6 +124,13 @@ public class Auth0ServletCallback extends HttpServlet {
 
         redirectOnFail = readParameter("auth0.redirect_on_error", config);
 
+        String useSystemProxy = readParameter("auth0.use_system_proxy", config);
+        if (null != useSystemProxy
+                && (useSystemProxy.equalsIgnoreCase("true")
+                || useSystemProxy.equalsIgnoreCase("1"))) {
+            setUseSystemDefaultProxy(true);
+        }
+
         for(String param : asList("auth0.client_id", "auth0.client_secret", "auth0.domain")) {
             properties.put(param, readParameter(param, config));
         }
@@ -137,13 +145,33 @@ public class Auth0ServletCallback extends HttpServlet {
         }
     }
 
+    public void setUseSystemDefaultProxy(boolean useDefaultProxy)
+    {
+        useSystemDefaultProxy = useDefaultProxy;
+    }
+
+    protected CloseableHttpClient createHttpClient()
+    {
+        CloseableHttpClient httpClient = null;
+        if (useSystemDefaultProxy) {
+            SystemDefaultRoutePlanner routePlanner = new SystemDefaultRoutePlanner(
+                    ProxySelector.getDefault());
+            httpClient = HttpClients.custom()
+                    .setRoutePlanner(routePlanner)
+                    .build();
+        } else {
+            httpClient = HttpClients.createDefault();
+        }
+        return httpClient;
+    }
+
     private Tokens fetchTokens(HttpServletRequest req) throws IOException {
         // Parse request to fetch authorization code
         String authorizationCode = getAuthorizationCode(req);
 
         URI accessTokenURI = getURI(properties);
 
-        CloseableHttpClient httpClient = HttpClients.createDefault();
+        CloseableHttpClient httpClient = createHttpClient();
 
         HttpPost httpPost = new HttpPost(accessTokenURI);
         List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
