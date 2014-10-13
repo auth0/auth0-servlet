@@ -44,8 +44,8 @@ public class Auth0Filter implements Filter {
     protected void onReject(ServletRequest req, ServletResponse response, FilterChain next) throws IOException, ServletException {
         HttpServletResponse resp = (HttpServletResponse) response;
         HttpServletRequest request = (HttpServletRequest) req;
-        resp.sendRedirect(request.getContextPath() + onFailRedirectTo + "?"
-				+ request.getQueryString());
+        String queryString = request.getQueryString() == null ? "" : "?" + request.getQueryString();
+        resp.sendRedirect(request.getContextPath() + onFailRedirectTo + queryString);
     }
 
     @Override
