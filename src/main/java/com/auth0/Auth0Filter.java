@@ -38,6 +38,7 @@ public class Auth0Filter implements Filter {
 
     protected void onSuccess(ServletRequest req, ServletResponse resp, FilterChain next, Auth0User user) throws IOException, ServletException {
         Auth0RequestWrapper auth0RequestWrapper = new Auth0RequestWrapper(user, (HttpServletRequest) req);
+        auth0RequestWrapper.addHeader("auth0-client", "ewoibmFtZSI6ICJhdXRoMC1qYXZhIiwgInZlcnNpb24iOiAiMS4wLjAiLAp9"); //Hardcoded basic data, since logs cannot yet handle java json objects.
         next.doFilter(auth0RequestWrapper, resp);
     }
 
