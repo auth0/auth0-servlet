@@ -3,7 +3,7 @@
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <title>Login</title>
-    <script src="https://cdn.auth0.com/w2/auth0-widget-5.js"></script>
+    <script src="https://cdn.auth0.com/js/lock-7.5.min.js"></script>
   </head>
   <body>
     <script type="text/javascript">
@@ -34,13 +34,18 @@
 
          }
       %>
-
-      var widget = new Auth0Widget({
-        domain:         '<%= application.getInitParameter("auth0.domain") %>',
-        clientID:       '<%= application.getInitParameter("auth0.client_id") %>',
-        callbackURL:    '<%= buildUrl(request, "/callback") %>'
-      });
-
+      
+      var lock = new Auth0Lock('<%= application.getInitParameter("auth0.client_id") %>', '<%= application.getInitParameter("auth0.domain") %>');
+      
+      function signin() {
+        lock.show({
+            callbackURL: '<%= buildUrl(request, "/callback") %>'
+          , responseType: 'code'
+          , authParams: {
+            scope: 'openid profile'
+          }
+        });
+      }
     </script>
     <% if ( request.getParameter("error") != null ) { %>
         <%-- TODO Escape and encode ${param.error} properly. It can be done using jstl c:out. --%>
