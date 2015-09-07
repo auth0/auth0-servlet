@@ -42,6 +42,7 @@
             callbackURL: '<%= buildUrl(request, "/callback") %>'
           , responseType: 'code'
           , authParams: {
+            state: '${state}'
             scope: 'openid profile'
           }
         });
@@ -51,6 +52,6 @@
         <%-- TODO Escape and encode ${param.error} properly. It can be done using jstl c:out. --%>
         <span style="color: red;">${param.error}</span>
     <% } %>
-    <button onclick="widget.signin({state: '${state}'})">Login</button>
+    <button onclick="signin()">Login</button>
   </body>
 </html>
