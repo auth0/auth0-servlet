@@ -42,9 +42,9 @@
             callbackURL: '<%= buildUrl(request, "/callback") %>'
           , responseType: 'code'
           , authParams: {
-            state: '${state}'
-            scope: 'openid profile'
-          }
+              state: '${state}'
+            , scope: 'openid profile'
+            }
         });
       }
     </script>
