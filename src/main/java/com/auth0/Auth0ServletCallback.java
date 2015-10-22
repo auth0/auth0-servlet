@@ -97,7 +97,7 @@ public class Auth0ServletCallback extends HttpServlet {
 	}
 
 	protected void store(Tokens tokens, Auth0User user, HttpServletRequest req) {
-		HttpSession session = req.getSession();
+		HttpSession session = req.getSession(true);
 
 		// Save tokens on a persistent session
 		session.setAttribute("auth0tokens", tokens);
