@@ -43,7 +43,7 @@
           , responseType: 'code'
           , authParams: {
               state: '${state}'
-            , scope: 'openid profile'
+            , scope: 'openid name email picture'
             }
         });
       }
