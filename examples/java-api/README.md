@@ -11,7 +11,7 @@ You also need to set the ClientSecret and ClientId for your Auth0 app as envirom
 For that, you can set them and run the example with the following command
 
 ````bash
-AUTH0_CLIENT_ID=myClientId AUTH0_CLIENT_SECRET=myClientSecret mvn clean install jetty:run -Djetty.port=3001
+mvn -DAUTH0_CLIENT_ID=myClientId -DAUTH0_CLIENT_SECRET=myClientSecret clean install jetty:run -Djetty.port=3001
 ````
 
 Try calling [http://localhost:3001/ping](http://localhost:3001/ping)
