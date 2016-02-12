@@ -3,7 +3,7 @@
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <title>Login</title>
-    <script src="https://cdn.auth0.com/js/lock-7.12.min.js"></script>
+    <script src="https://cdn.auth0.com/js/lock-8.2.min.js"></script>
   </head>
   <body>
     <script type="text/javascript">
