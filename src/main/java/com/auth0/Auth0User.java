@@ -3,6 +3,7 @@ package com.auth0;
 import java.security.Principal;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
@@ -17,7 +18,11 @@ public class Auth0User implements Principal {
 	}
 
 	public static Auth0User get(HttpServletRequest req) {
-		return (Auth0User) req.getSession().getAttribute("user");
+	  HttpSession s = req.getSession(false);
+	  if (s!=null) {
+	    return (Auth0User) s.getAttribute("user");
+	  }
+		return null;
 	}
 
 	public String getProperty(String prop) {

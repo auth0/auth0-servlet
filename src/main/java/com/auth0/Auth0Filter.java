@@ -27,12 +27,18 @@ public class Auth0Filter implements Filter {
     }
 
     protected Tokens loadTokens(ServletRequest req, ServletResponse resp) {
-        HttpSession session = ((HttpServletRequest) req).getSession();
+        HttpSession session = ((HttpServletRequest) req).getSession(false);
+        if (session == null) {
+          return null;
+        }
         return (Tokens) session.getAttribute("auth0tokens");
     }
     
     protected Auth0User loadUser(ServletRequest req) {
-        HttpSession session = ((HttpServletRequest) req).getSession();
+        HttpSession session = ((HttpServletRequest) req).getSession(false);
+        if (session == null) {
+          return null;
+        }
         return (Auth0User) session.getAttribute("user");
     }
 
