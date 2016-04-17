@@ -31,9 +31,9 @@ public class Tokens {
         this.idToken = idToken;
         this.accessToken = accessToken;
     }
-    
+
     public Tokens(JSONObject json) throws JSONException {
-    	this((String) json.get("id_token"), (String) json.get("access_token"));
+        this((String) json.get("id_token"), (String) json.get("access_token"));
     }
 
     public String getAccessToken() {
@@ -44,7 +44,7 @@ public class Tokens {
         return idToken;
     }
 
-	public boolean exist() {
-		return getIdToken() != null && getAccessToken() != null;
-	}
+    public boolean exist() {
+        return getIdToken() != null && getAccessToken() != null;
+    }
 }
