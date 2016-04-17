@@ -1,8 +1,8 @@
 package com.auth0.example;
 
-import com.auth0.RequestNonceStorage;
 import com.auth0.NonceGenerator;
 import com.auth0.NonceStorage;
+import com.auth0.RequestNonceStorage;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
