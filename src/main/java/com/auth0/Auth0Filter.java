@@ -1,17 +1,11 @@
 package com.auth0;
 
 
-import java.io.IOException;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
 
 public class Auth0Filter implements Filter {
 
@@ -20,7 +14,7 @@ public class Auth0Filter implements Filter {
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         onFailRedirectTo = filterConfig.getInitParameter("auth0.redirect_on_authentication_error");
-        
+
         if (onFailRedirectTo == null) {
             throw new IllegalArgumentException("auth0.redirect_on_authentication_error parameter of " + this.getClass().getName() + " cannot be null");
         }
@@ -30,7 +24,7 @@ public class Auth0Filter implements Filter {
         HttpSession session = ((HttpServletRequest) req).getSession();
         return (Tokens) session.getAttribute("auth0tokens");
     }
-    
+
     protected Auth0User loadUser(ServletRequest req) {
         HttpSession session = ((HttpServletRequest) req).getSession();
         return (Auth0User) session.getAttribute("user");
@@ -45,7 +39,7 @@ public class Auth0Filter implements Filter {
         HttpServletResponse resp = (HttpServletResponse) response;
         HttpServletRequest request = (HttpServletRequest) req;
         resp.sendRedirect(request.getContextPath() + onFailRedirectTo + "?"
-				+ request.getQueryString());
+                + request.getQueryString());
     }
 
     @Override

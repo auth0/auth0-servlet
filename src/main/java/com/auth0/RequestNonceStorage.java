@@ -10,7 +10,7 @@ public class RequestNonceStorage implements NonceStorage {
         this.request = request;
     }
 
-    public String getState () {
+    public String getState() {
         return (String) request.getSession(true).getAttribute("state");
     }
 
