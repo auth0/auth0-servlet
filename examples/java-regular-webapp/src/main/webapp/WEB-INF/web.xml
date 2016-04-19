@@ -8,14 +8,14 @@
     <!-- Servlets -->
     <servlet>
         <servlet-name>Hello</servlet-name>
-        <servlet-class>com.auth0.example.HelloServlet</servlet-class>
+        <servlet-class>com.auth0.example.HomeServlet</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>RedirectCallback</servlet-name>
         <servlet-class>com.auth0.Auth0ServletCallback</servlet-class>
         <init-param>
             <param-name>auth0.redirect_on_success</param-name>
-            <param-value>/</param-value>
+            <param-value>/portal/home</param-value>
         </init-param>
         <init-param>
             <param-name>auth0.redirect_on_error</param-name>
@@ -26,11 +26,19 @@
         <servlet-name>Login</servlet-name>
         <servlet-class>com.auth0.example.LoginServlet</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>Logout</servlet-name>
+        <servlet-class>com.auth0.example.LogoutServlet</servlet-class>
+        <init-param>
+            <param-name>onLogoutRedirectTo</param-name>
+            <param-value>/login</param-value>
+        </init-param>
+    </servlet>
 
     <!-- Servlet Mappings -->
     <servlet-mapping>
         <servlet-name>Hello</servlet-name>
-        <url-pattern>/</url-pattern>
+        <url-pattern>/portal/home</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>Login</servlet-name>
@@ -39,6 +47,10 @@
     <servlet-mapping>
         <servlet-name>RedirectCallback</servlet-name>
         <url-pattern>/callback</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>Logout</servlet-name>
+        <url-pattern>/logout</url-pattern>
     </servlet-mapping>
 
     <!-- Filters -->
@@ -52,8 +64,13 @@
     </filter>
     <filter-mapping>
         <filter-name>AuthFilter</filter-name>
-        <url-pattern>/</url-pattern>
+        <url-pattern>/portal/*</url-pattern>
     </filter-mapping>
+    <!-- Error Pages-->
+    <error-page>
+        <error-code>404</error-code>
+        <location>/login</location>
+    </error-page>
 
     <!-- Auth0 Configuration -->
     <context-param>
@@ -70,5 +87,6 @@
         <param-name>auth0.domain</param-name>
         <param-value>{DOMAIN}</param-value>
     </context-param>
+
 
 </web-app>
