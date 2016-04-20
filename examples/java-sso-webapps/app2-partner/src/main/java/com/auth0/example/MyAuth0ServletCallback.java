@@ -74,6 +74,9 @@ public class MyAuth0ServletCallback extends HttpServlet {
                 Tokens tokens = fetchTokens(req);
                 Auth0User user = fetchUser(tokens);
                 store(tokens, user, req);
+                // clear nonce here
+                final NonceStorage nonceStorage = new RequestNonceStorage(req);
+                nonceStorage.setState(null);
                 onSuccess(req, resp);
             } catch (IllegalArgumentException ex) {
                 onFailure(req, resp, ex);
