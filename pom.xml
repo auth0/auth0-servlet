@@ -47,9 +47,9 @@
 	</developers>
 
 	<scm>
-		<url>https://github.com/auth0/auth0-java</url>
-		<developerConnection>scm:git:git@github.com:auth0/auth0-java.git</developerConnection>
-		<connection>scm:git:git@github.com:auth0/auth0-java.git</connection>
+		<url>https://github.com/auth0/auth0-servlet</url>
+		<developerConnection>scm:git:git@github.com:auth0/auth0-servlet.git</developerConnection>
+		<connection>scm:git:git@github.com:auth0/auth0-servlet.git</connection>
 	</scm>
 
 	<dependencies>
