@@ -10,7 +10,7 @@
 
 	<groupId>com.auth0</groupId>
 	<artifactId>auth0-servlet</artifactId>
-	<version>2.2-SNAPSHOT</version>
+	<version>2.2.0</version>
 	<packaging>jar</packaging>
 
 	<name>Auth0 bindings for Java Servlets</name>
