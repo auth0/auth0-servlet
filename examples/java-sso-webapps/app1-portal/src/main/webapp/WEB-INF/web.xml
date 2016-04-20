@@ -86,22 +86,22 @@
     <!-- Auth0 Configuration -->
     <context-param>
         <param-name>auth0.client_id</param-name>
-        <param-value>3GKjIkPuWbGa0ANR6Mi3sg5c9JbomCBG</param-value>
+        <param-value>{{CLIENT_ID}}</param-value>
     </context-param>
 
     <context-param>
         <param-name>auth0.client_secret</param-name>
-        <param-value>psjP41d6XZ3UBbl98jIEvY4sdDYuBBPEjHUrsthv7elowCQtPEGyaDkSpYbH7g05</param-value>
+        <param-value>{{CLIENT_SECRET}}</param-value>
     </context-param>
 
     <context-param>
         <param-name>auth0.domain</param-name>
-        <param-value>arcseldon.auth0.com</param-value>
+        <param-value>{{DOMAIN}}</param-value>
     </context-param>
 
     <context-param>
         <param-name>auth0.connection</param-name>
-        <param-value>MyMongoDB</param-value>
+        <param-value>{{CONNECTION_NAME}}</param-value>
     </context-param>
 
     <context-param>

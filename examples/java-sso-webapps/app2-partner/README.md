@@ -2,7 +2,7 @@
 
 ### Prerequisites
 
-In order to run this example you will need to have Maven installed. You can install Maven with [brew](http://brew.sh/):
+In order to run this example you will need to have Java 8 and Maven installed. You can install Maven with [brew](http://brew.sh/):
 
 ```sh
 brew install maven

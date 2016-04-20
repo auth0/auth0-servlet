@@ -53,26 +53,24 @@
     </error-page>
 
     <!-- Auth0 Configuration -->
-
-    <!-- Auth0 Configuration -->
     <context-param>
         <param-name>auth0.client_id</param-name>
-        <param-value>OI51x6D3WDsjSCZnoKmjuLXKyw2PvLsw</param-value>
+        <param-value>{{CLIENT_ID}}</param-value>
     </context-param>
 
     <context-param>
         <param-name>auth0.client_secret</param-name>
-        <param-value>eu4m98NL4Jla4o0Z8aTUeNJcaLkQQ8UCdQoFbwHneANzm-Mo8wD4V5vtJ_AKNbmg</param-value>
+        <param-value>{{CLIENT_SECRET}}</param-value>
     </context-param>
 
     <context-param>
         <param-name>auth0.domain</param-name>
-        <param-value>arcseldon.auth0.com</param-value>
+        <param-value>{{DOMAIN}}</param-value>
     </context-param>
 
     <context-param>
         <param-name>auth0.connection</param-name>
-        <param-value>MyMongoDB</param-value>
+        <param-value>{{CONNECTION_NAME}}</param-value>
     </context-param>
 
     <context-param>
