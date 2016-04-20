@@ -39,8 +39,11 @@ public class PartnerLogin extends HttpServlet {
         logger.debug("Login");
         logger.debug("Request GetServletPath: " + request.getServletPath());
         final NonceStorage nonceStorage = new RequestNonceStorage(request);
-        String nonce = nonceGenerator.generateNonce();
-        nonceStorage.setState(nonce);
+        String nonce = nonceStorage.getState();
+        if (nonce == null) {
+            nonce = nonceGenerator.generateNonce();
+            nonceStorage.setState(nonce);
+        }
         request.setAttribute("state", "nonce=" + nonce + "&eru=" + externalReturnUrl);
         request.setAttribute("eru", externalReturnUrl);
         // response header state only for POSTMAN - not required in real app

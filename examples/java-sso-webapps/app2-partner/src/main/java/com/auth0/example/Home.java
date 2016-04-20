@@ -26,11 +26,17 @@ public class Home extends HttpServlet {
 
         final String baseUrl = Helpers.buildUrlStr(request);
         request.setAttribute("baseUrl", baseUrl);
-        final NonceStorage nonceStorage = new RequestNonceStorage(request);
-        final String nonce = nonceGenerator.generateNonce();
-        nonceStorage.setState(nonce);
-        request.setAttribute("state", "nonce=" + nonce);
 
+        final NonceStorage nonceStorage = new RequestNonceStorage(request);
+        String nonce = nonceStorage.getState();
+        if (nonce == null) {
+            nonce = nonceGenerator.generateNonce();
+            nonceStorage.setState(nonce);
+        }
+//        final NonceStorage nonceStorage = new RequestNonceStorage(request);
+//        final String nonce = nonceGenerator.generateNonce();
+//        nonceStorage.setState(nonce);
+        request.setAttribute("state", "nonce=" + nonce);
         final String authorizationErrorDescription = request.getParameter("error_description");
         if (authorizationErrorDescription != null) {
             request.setAttribute("authorizationErrorDescription", authorizationErrorDescription);

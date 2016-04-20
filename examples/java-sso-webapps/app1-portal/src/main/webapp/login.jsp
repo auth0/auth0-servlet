@@ -6,7 +6,7 @@
     <title>Login</title>
       <script src="http://cdn.auth0.com/w2/auth0-6.7.js"></script>
       <script src="http://code.jquery.com/jquery.js"></script>
-      <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+      <link rel="stylesheet" type="text/css" href="/css/bootstrap.css">
       <link rel="stylesheet" type="text/css" href="/css/signin.css">
   </head>
   <body>
@@ -26,9 +26,13 @@
         </div>
     </div>
 
-    <jsp:include page="auth0.jsp" flush="true"/>
-
     <script type="text/javascript">
+
+    var auth0 = new Auth0({
+        domain: '<%= application.getInitParameter("auth0.domain") %>',
+        clientID: '<%= application.getInitParameter("auth0.client_id") %>',
+        callbackURL: '<%= request.getAttribute("baseUrl") + "/callback" %>'
+    });
 
      // check SSO status
      auth0.getSSOData(function (err, data) {
@@ -40,14 +44,16 @@
 
              // perform an SSO login if user is not logged in locally or they are but they're logged in as a different user
              if (!loggedInUserId || loggedInUserId !== data.lastUsedUserID) {
+
                  auth0.login({
-                     connection: 'MyMongoDB',
+                     connection: '<%= application.getInitParameter("auth0.connection") %>',
                      scope: 'openid name email picture',
                      state: '${state}'
                  }, function (err) {
                      // this only gets called if there was a login error
                      console.error('Error logging in: ' + err);
                  });
+
              } else {
                  // have SSO session and valid user - send to portal/home
                  window.location = '<%= request.getAttribute("baseUrl") + "/portal/home" %>';

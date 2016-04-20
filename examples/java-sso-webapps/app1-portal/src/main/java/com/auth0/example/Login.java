@@ -26,8 +26,11 @@ public class Login extends HttpServlet {
         logger.debug("Request GetServletPath: " + request.getServletPath());
         if (!"/favicon.ico".equals(request.getServletPath())) {
             final NonceStorage nonceStorage = new RequestNonceStorage(request);
-            String nonce = nonceGenerator.generateNonce();
-            nonceStorage.setState(nonce);
+            String nonce = nonceStorage.getState();
+            if (nonce == null) {
+                nonce = nonceGenerator.generateNonce();
+                nonceStorage.setState(nonce);
+            }
             request.setAttribute("state", "nonce=" + nonce);
             // response header state only for POSTMAN - not required in real app
             response.setHeader("state", "nonce=" + nonce);

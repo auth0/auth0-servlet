@@ -6,7 +6,7 @@
     <title>Login</title>
       <script src="http://cdn.auth0.com/w2/auth0-6.7.js"></script>
       <script src="http://code.jquery.com/jquery.js"></script>
-      <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+      <link rel="stylesheet" type="text/css" href="/css/bootstrap.css">
       <link rel="stylesheet" type="text/css" href="/css/signin.css">
   </head>
   <body>

@@ -53,8 +53,6 @@
     </error-page>
 
     <!-- Auth0 Configuration -->
-
-    <!-- Auth0 Configuration -->
     <context-param>
         <param-name>auth0.client_id</param-name>
         <param-value>{{CLIENT_ID}}</param-value>

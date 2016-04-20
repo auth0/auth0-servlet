@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Home Page</title>
-    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.css">
     <link rel="stylesheet" type="text/css" href="/css/jumbotron-narrow.css">
     <script src="http://cdn.auth0.com/w2/auth0-6.7.js"></script>
     <script src="http://code.jquery.com/jquery.js"></script>
@@ -42,7 +42,7 @@
             // perform an SSO login if user is not logged in locally or they are but they're logged in as a different user
             if (!loggedInUserId || loggedInUserId !== data.lastUsedUserID) {
                 auth0.login({
-                    connection: 'MyMongoDB',
+                    connection:'<%= application.getInitParameter("auth0.connection") %>',
                     scope: 'openid name email picture',
                     state: '${state}'
                 }, function (err) {
