@@ -20,29 +20,15 @@ public class Home extends HttpServlet {
     private final NonceGenerator nonceGenerator = new NonceGenerator();
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
         logger.debug("Home");
         logger.debug("Request GetServletPath: " + request.getServletPath());
-
-        final String baseUrl = Helpers.buildUrlStr(request);
-        request.setAttribute("baseUrl", baseUrl);
-
         final NonceStorage nonceStorage = new RequestNonceStorage(request);
         String nonce = nonceStorage.getState();
         if (nonce == null) {
             nonce = nonceGenerator.generateNonce();
             nonceStorage.setState(nonce);
         }
-//        final NonceStorage nonceStorage = new RequestNonceStorage(request);
-//        final String nonce = nonceGenerator.generateNonce();
-//        nonceStorage.setState(nonce);
-        request.setAttribute("state", "nonce=" + nonce);
-        final String authorizationErrorDescription = request.getParameter("error_description");
-        if (authorizationErrorDescription != null) {
-            request.setAttribute("authorizationErrorDescription", authorizationErrorDescription);
-            request.setAttribute("error", authorizationErrorDescription);
-        }
-        // check if logged in..
+        request.setAttribute("state", nonce);
         final Auth0User user = Auth0User.get(request);
         request.setAttribute("isAuthenticated", (user != null) ? true : false);
         if (user != null) {

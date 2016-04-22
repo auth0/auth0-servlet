@@ -44,6 +44,7 @@
 
             // perform an SSO login if user is not logged in locally or they are but they're logged in as a different user
             if (!loggedInUserId || loggedInUserId !== data.lastUsedUserID) {
+
                 auth0.login({
                     connection: '<%= application.getInitParameter("auth0.connection") %>',
                     scope: 'openid name email picture',
@@ -56,10 +57,12 @@
                 $('body').show();
             }
         } else {
+
             <% if ((Boolean) request.getAttribute("isAuthenticated")) { %>
                 // user is logged in locally, but no SSO session exists -> log them out locally
                 window.location = '<%= request.getAttribute("baseUrl") + "/logout" %>';
             <% } else { %>
+
             // user is not logged in locally and no SSO session exists -> send them to the partner login page
             window.location = '<%= application.getInitParameter("auth0.partnerLoginUrl") %>?externalReturnUrl=' +
                     encodeURIComponent(window.location);

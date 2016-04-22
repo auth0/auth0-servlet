@@ -11,6 +11,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 
 public class PartnerLogin extends HttpServlet {
@@ -19,9 +21,18 @@ public class PartnerLogin extends HttpServlet {
 
     private final NonceGenerator nonceGenerator = new NonceGenerator();
 
+    protected List trustedExternalReturnUrls;
+
+    protected boolean isTrustedExternalReturnUrl (final String url) {
+        if (trustedExternalReturnUrls == null) {
+            final String trustedExternalReturnUrlsStr = getServletContext().getInitParameter("auth0.trustedExternalReturnUrls");
+            trustedExternalReturnUrls = Arrays.asList(trustedExternalReturnUrlsStr.split("\\s*,\\s*"));
+        }
+        return trustedExternalReturnUrls.contains(url);
+    }
+
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String baseUrl = Helpers.buildUrlStr(request);
-        request.setAttribute("baseUrl", baseUrl);
+        logger.debug("PartnerLogin");
         final String externalReturnUrl = request.getParameter("externalReturnUrl");
         if (externalReturnUrl == null) {
             response.getWriter().write("Missing required external return URL query param.");
@@ -29,14 +40,12 @@ public class PartnerLogin extends HttpServlet {
             response.flushBuffer();
             return;
         }
-        if (!Helpers.isTrustedExternalReturnUrl(externalReturnUrl)) {
+        if (!isTrustedExternalReturnUrl(externalReturnUrl)) {
             response.getWriter().write("Cannot redirect to untrusted URL: " + externalReturnUrl);
             response.setStatus(400);
             response.flushBuffer();
             return;
         }
-        // set this up for view page
-        logger.debug("Login");
         logger.debug("Request GetServletPath: " + request.getServletPath());
         final NonceStorage nonceStorage = new RequestNonceStorage(request);
         String nonce = nonceStorage.getState();
@@ -45,11 +54,10 @@ public class PartnerLogin extends HttpServlet {
             nonceStorage.setState(nonce);
         }
         request.setAttribute("state", "nonce=" + nonce + "&eru=" + externalReturnUrl);
-        request.setAttribute("eru", externalReturnUrl);
+        logger.debug("Nonce: " + nonce);
+        logger.debug("Eru: " + externalReturnUrl);
         // response header state only for POSTMAN - not required in real app
         response.setHeader("state", "nonce=" + nonce + "&eru=" + externalReturnUrl);
-        logger.debug("Nonce (set in state): " + nonce);
-        logger.debug("Eru (set in state): " + externalReturnUrl);
         request.getRequestDispatcher("/partnerLogin.jsp").forward(request, response);
 
     }

@@ -21,7 +21,7 @@
     </servlet>
     <servlet>
         <servlet-name>RedirectCallback</servlet-name>
-        <servlet-class>com.auth0.example.MyAuth0ServletCallback</servlet-class>
+        <servlet-class>com.auth0.Auth0ServletCallback</servlet-class>
         <init-param>
             <param-name>auth0.redirect_on_success</param-name>
             <param-value>/portal/home</param-value>
@@ -46,7 +46,17 @@
         <url-pattern>/callback</url-pattern>
     </servlet-mapping>
 
-    <!-- Error Pages-->
+    <!-- Filters -->
+    <filter>
+        <filter-name>BaseUrlFilter</filter-name>
+        <filter-class>com.auth0.example.BaseUrlFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>BaseUrlFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- Error Pages -->
     <error-page>
         <error-code>404</error-code>
         <location>/portal/home</location>
