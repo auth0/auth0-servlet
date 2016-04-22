@@ -114,6 +114,11 @@
     </context-param>
 
     <context-param>
+        <param-name>auth0.trustedExternalReturnUrls</param-name>
+        <param-value>http://localhost:4000/portal/home,http://app2.com:4000/portal/home</param-value>
+    </context-param>
+
+    <context-param>
         <param-name>log4jConfiguration</param-name>
         <param-value>log4j2.xml</param-value>
     </context-param>
