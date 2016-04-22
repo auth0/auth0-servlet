@@ -14,9 +14,7 @@ public class Logout extends HttpServlet {
     private static final Logger logger = LogManager.getLogger(Logout.class);
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
         logger.debug("Logout");
-
         if (request.getSession() != null) {
             request.getSession().invalidate();
         }

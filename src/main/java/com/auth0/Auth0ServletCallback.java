@@ -75,6 +75,8 @@ public class Auth0ServletCallback extends HttpServlet {
                 onFailure(req, resp, ex);
             }
 
+        } else {
+            onFailure(req, resp, new IllegalStateException("Invalid Request"));
         }
     }
 
@@ -87,8 +89,11 @@ public class Auth0ServletCallback extends HttpServlet {
     protected void onFailure(HttpServletRequest req, HttpServletResponse resp,
                              Exception ex) throws ServletException, IOException {
         ex.printStackTrace();
-        resp.sendRedirect(req.getContextPath() + redirectOnFail + "?"
-                + req.getQueryString());
+        String redirectOnFailLocation = req.getContextPath() + redirectOnFail;
+        if (req.getQueryString() != null) {
+            redirectOnFailLocation = redirectOnFailLocation + "?" + req.getQueryString();
+        }
+        resp.sendRedirect(redirectOnFailLocation);
     }
 
     protected void store(Tokens tokens, Auth0User user, HttpServletRequest req) {
@@ -179,7 +184,7 @@ public class Auth0ServletCallback extends HttpServlet {
         return req.getParameter("error") != null;
     }
 
-    static String readParameter(String parameter, ServletConfig config) {
+    protected static String readParameter(String parameter, ServletConfig config) {
         String first = config.getInitParameter(parameter);
         if (hasValue(first)) {
             return first;

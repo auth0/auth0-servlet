@@ -17,9 +17,6 @@ public class Home extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         logger.debug("Home");
-        String baseUrl = Helpers.buildUrlStr(request);
-        request.setAttribute("baseUrl", baseUrl);
-        // check if logged in..
         final Auth0User user = Auth0User.get(request);
         request.setAttribute("isAuthenticated", (user != null) ? true : false);
         if (user != null) {
