@@ -18,6 +18,12 @@ app2.com - partner website
 The aim of this solution ot provide a simple, no-frills sample developers can follow to understand the orchestration
 required to achieve SSO using Auth0 using Java, without having to also cope with understanding additional libraries or frameworks.
 
+#### Sequence Diagrams
+
+* [New SSO Session Flow](sequence-diagrams/new-sso-session.md)
+* [Existing SSO Session Flow](sequence-diagrams/existing-sso-session.md)
+
+
 ### Setup
 
 Create an [Auth0 Account](https://auth0.com) (if not already done so - free!).

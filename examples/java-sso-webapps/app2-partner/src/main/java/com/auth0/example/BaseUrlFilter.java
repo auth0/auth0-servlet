@@ -6,9 +6,14 @@ import java.io.IOException;
 
 public class BaseUrlFilter implements Filter {
 
+    private static String baseUrl;
+
     protected static String buildUrlStr(final HttpServletRequest request) {
         if (request == null) {
             throw new NullPointerException("request cannot be null");
+        }
+        if (baseUrl != null) {
+            return baseUrl;
         }
         final String scheme = request.getScheme();
         final String serverName = request.getServerName();
@@ -18,7 +23,8 @@ public class BaseUrlFilter implements Filter {
         if ((serverPort != 80) && (serverPort != 443)) {
             url.append(":").append(serverPort);
         }
-        return url.toString();
+        baseUrl = url.toString();
+        return baseUrl;
     }
 
     @Override
