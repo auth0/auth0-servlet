@@ -97,11 +97,6 @@
     </context-param>
 
     <context-param>
-        <param-name>auth0.connection</param-name>
-        <param-value>{{CONNECTION_NAME}}</param-value>
-    </context-param>
-
-    <context-param>
         <param-name>onLogoutRedirectTo</param-name>
         <param-value>/login</param-value>
     </context-param>

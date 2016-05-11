@@ -63,7 +63,7 @@ That's it for the Dashboard setup!
 
 Enter your:
 
-`client_id`, `client_secret`, `domain`, and `connection` information into `src/main/webapp/WEB-INF/web.xml`
+`client_id`, `client_secret`, and `domain` information into `src/main/webapp/WEB-INF/web.xml`
 
 
 ### Build and Run
