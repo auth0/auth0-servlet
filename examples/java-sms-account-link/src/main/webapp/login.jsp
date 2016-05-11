@@ -10,6 +10,7 @@
 </head>
 <body>
 <div class="container">
+    
     <div id="enter-phone" class="form-signin">
         <h2 class="form-signin-heading">Phone</h2>
         <label for="phone-number" class="sr-only">Mobile Number</label>
@@ -24,20 +25,11 @@
         <button id="code-btn" class="btn btn-lg btn-primary btn-block">Submit Code</button>
     </div>
 
-    <div id="result" class="collapse">
-        <img class="avatar"/>
-        <h2>Welcome <span class="nickname"></span></h2>
-    </div>
-
 </div>
 
-<script type="text/javascript">
+<jsp:include page="auth0.jsp" flush="true"/>
 
-    var auth0 = new Auth0({
-        clientID: '<%= application.getInitParameter("auth0.client_id") %>',
-        domain: '<%= application.getInitParameter("auth0.domain") %>',
-        callbackURL: '<%= request.getAttribute("baseUrl") + "/callback" %>'
-    });
+<script type="text/javascript">
 
     $('#phone-number-btn').click(function () {
         var phoneNumber = $('#phone-number').val();
