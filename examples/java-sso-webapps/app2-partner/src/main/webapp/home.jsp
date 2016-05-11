@@ -29,6 +29,7 @@
 
     function auth0Logout() {
         var options = {
+            client_id: '<%= application.getInitParameter("auth0.client_id") %>',
             returnTo: '<%= request.getAttribute("baseUrl") + "/logout" %>'
         }
         return auth0.logout(options);
