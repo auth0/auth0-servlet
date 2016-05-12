@@ -1,12 +1,11 @@
-## Simple Application demonstrating Passwordless authentication and subsequent Social Connection Upgrade
+## Simple Application demonstrating Passwordless authentication and subsequent MFA opt-in & Social Connection Upgrade
 
 So you basically:
 
 ```
-1) start with passwordless,
+1) start with passwordless, using email magic link
 2) when the user is ready to create their dropbox account, they opt to "sign up" by selecting "Link Dropbox"
-3) an easy extension point would to have the application be configurable to receive further `upgrade` connection types,
- for instance linking to an Enterprise connection.
+3). when the user is ready they can opt-in to Multi-Factor authentication - in this sample using [duo](https://duo.com/)
 ```
 
 ### Prerequisites
@@ -37,6 +36,7 @@ Allowed Callback URLs:
 
 ```
 http://localhost:3099/callback
+http://localhost:3099/mcallback
 ```
 
 Ensure you add the following to the settings.
@@ -50,11 +50,43 @@ http://localhost:3099/logout
 Now, please ensure you set up both a
 
 ```
-Passwordless SMS Connection (Connections -> Passwordless -> SMS)
+Passwordless Email Connection (Connections -> Passwordless -> Email)
 Dropbox Social Connection (Connections -> Social -> Dropbox)
 ```
 
 Both of these connection types NEED to be associated with the application you have created - `app`
+
+
+Next, enable MFA - Multi-Factor Authentication, and configure with the following - supplying your own values:
+
+```
+function (user, context, callback) {
+  var CLIENTS_WITH_MFA = ['{YOUR_CLIENT_ID}'];
+  // run only for the specified clients
+  if (CLIENTS_WITH_MFA.indexOf(context.clientID) !== -1) {
+    // we only want users whose app_metadata is updated with mfa flag = true to use this
+    if (user.app_metadata && (user.app_metadata.mfa === true)){
+      context.multifactor = {
+        //required
+        provider: 'duo',
+        ikey: '{INTEGRATION_KEY}',
+        skey: '{SECRET_KEY}',
+        host: '{API_HOSTNAME}',
+
+         ignoreCookie: false,
+
+      };
+    }
+  }
+  callback(null, user, context);
+}
+```
+
+You will have to set up a (free) account with Duo Security, to obtain the integration key, secret key, and api hostname.
+
+Screenshot below of how this looks:
+
+![](img/duo_app.jpg)
 
 That's it for the Dashboard setup!
 
@@ -63,7 +95,17 @@ That's it for the Dashboard setup!
 
 Enter your:
 
-`client_id`, `client_secret`, and `domain` information into `src/main/webapp/WEB-INF/web.xml`
+`client_id`, `client_secret`, `domain` and `appMetadata` information into `src/main/webapp/WEB-INF/web.xml`
+
+For the `appMetadata` token, you shall need to visit our [management api page](https://auth0.com/docs/api/management/v2#!/Users/patch_users_by_id)
+
+Ensure you select `update:users_app_metadata` grant.
+
+![](img/patch_user1.jpg)
+
+Copy the generated management token
+
+![](img/patch_user2.jpg)
 
 
 ### Build and Run
@@ -77,16 +119,16 @@ Then, go to [http://localhost:3099/login](http://localhost:3099/login).
 
 ---
 
-### Here are some screenshots of the overall flow:
+### Here are some screenshots of the overall flow (minus the Growler notifications!):
 
 
 #### 1.Login
 
-![](img/1.login_phone.jpg)
+![](img/1.login.jpg)
 
-#### 2.Login
+#### 2.Email
 
-![](img/2.login_sms.jpg)
+![](img/2.email.jpg)
 
 #### 3. Home
 
@@ -100,12 +142,54 @@ Then, go to [http://localhost:3099/login](http://localhost:3099/login).
 
 ![](img/5.home.jpg)
 
-#### 6. User Profile upon completion
+#### 6. Login
 
-![](img/6.details.jpg)
+![](img/6.login.jpg)
+
+#### 7. Mail
+
+![](img/7.mail.jpg)
+
+#### 8. MFA with Duo
+
+![](img/8.mfa.jpg)
+
+#### 9. MFA with Duo
+
+![](img/9.mfa.jpg)
+
+#### 10. MFA with Duo
+
+![](img/10.mfa.jpg)
+
+#### 11. MFA with Duo
+
+![](img/11.mfa.jpg)
+
+#### 12. MFA with Duo
+
+![](img/12.mfa.jpg)
+
+#### 13. MFA with Duo
+
+![](img/13.mfa.jpg)
+
+#### 14. MFA with Duo
+
+![](img/14.mfa.jpg)
+
+#### 15. Home
+
+![](img/15.home.jpg)
+
+#### 16. User Profile upon completion
+
+![](img/user_info.jpg)
+
 
 
 ---
+
 
 ## License
 
