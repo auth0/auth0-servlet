@@ -39,7 +39,7 @@
   <h1>Welcome</h1>
   <img src="<%=user.getPicture()%>"/>
   <br />
-  Hello <%=user.getName()%>!</p>
+  <p>Hello <%=user.getName()%>!</p>
   <p>Your nickname is: <%=user.getNickname()%></p>
 
   <button id="logout">Logout</button>

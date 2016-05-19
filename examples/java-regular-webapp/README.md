@@ -15,6 +15,8 @@ mvn -v
 
 ### Build and Run
 
+Open the `src\main\webapp\WEB-INF\web.xml` file and replace `{CLIENT_ID}`, `{CLIENT_SECRET}` and `{DOMAIN}` with your account information.
+
 In order to build and run the project you must execute:
 ```sh
 mvn clean install org.mortbay.jetty:jetty-maven-plugin:run
