@@ -6,7 +6,7 @@ You can use  [Auth0](https://www.auth0.com) to add username/password authenticat
 
 ## Learn how to use it
 
-[Please read this tutorial](https://docs.auth0.com/server-platforms/java) to learn how to use this SDK. It's exremely simple
+[Please read this tutorial](https://docs.auth0.com/server-platforms/java) to learn how to use this SDK.
 
 ## Extensibility points
 ### Auth0 Servlet Callback
