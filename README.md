@@ -19,7 +19,7 @@ Here you can configure what to do after successful authentication. By default, i
 
 Here you can configure what to do after failure authentication. By default, it redirects to the URL configured in the `web.xml`
 			
-#### protected void store(Tokens tokens, Auth0User user, HttpServletRequest req
+#### protected void store(Tokens tokens, Auth0User user, HttpServletRequest req)
 
 Here you can configure where to store the Tokens and the User. By default, they're stored in the `Session` in the `tokens` and `user` fields
 
@@ -44,10 +44,6 @@ By default, on we redirect to the URL configured in the `web.xml`. You can overr
 ## Issue Reporting
 
 If you have found a bug or if you have a feature request, please report them at this repository issues section. Please do not report security vulnerabilities on the public GitHub issue tracker. The [Responsible Disclosure Program](https://auth0.com/whitehat) details the procedure for disclosing security issues.
-
-### Release Process
-
-* [How to release a new version to Maven](https://github.com/auth0/auth0-java/blob/master/release.md)
 
 ## What is Auth0?
 
