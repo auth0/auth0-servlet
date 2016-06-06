@@ -10,15 +10,14 @@
 
 	<groupId>com.auth0</groupId>
 	<artifactId>auth0-servlet</artifactId>
-	<version>2.3.0-SNAPSHOT</version>
+	<version>2.4.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>Auth0 bindings for Java Servlets</name>
-	<description>Add Auth0 to your Servlet by using this module</description>
+	<name>auth0-servlet</name>
 	<url>http://www.auth0.com</url>
 
 	<properties>
-		<java.version>1.6</java.version>
+		<java.version>1.7</java.version>
 	</properties>
 
 	<licenses>
@@ -29,30 +28,6 @@
 		</license>
 	</licenses>
 
-	<developers>
-		<developer>
-			<name>Alberto Pose</name>
-			<id>pose</id>
-			<roles>
-				<role>Developer</role>
-			</roles>
-		</developer>
-		<developer>
-			<name>Martin Gontovnikas</name>
-			<id>mgonto</id>
-			<roles>
-				<role>Developer Advocate</role>
-			</roles>
-		</developer>
-		<developer>
-			<name>Richard Seldon</name>
-			<id>arcseldon</id>
-			<roles>
-				<role>Solution Architect</role>
-			</roles>
-		</developer>
-	</developers>
-
 	<scm>
 		<url>https://github.com/auth0/auth0-servlet</url>
 		<developerConnection>scm:git:git@github.com:auth0/auth0-servlet.git</developerConnection>
@@ -60,41 +35,62 @@
 	</scm>
 
 	<dependencies>
+
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
 			<version>3.0.1</version>
 			<scope>provided</scope>
 		</dependency>
+
+        <!--Auth0-->
+
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+
+        <!--Other Third Party-->
+
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.3.2</version>
 		</dependency>
 
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.4</version>
+        </dependency>
 
 		<dependency>
 			<groupId>us.monoid.web</groupId>
 			<artifactId>resty</artifactId>
 			<version>0.3.2</version>
 		</dependency>
+
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>1.4</version>
 		</dependency>
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.10</version>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
 			<version>1.9.5</version>
 			<scope>test</scope>
 		</dependency>
+
 	</dependencies>
 
 	<build>
