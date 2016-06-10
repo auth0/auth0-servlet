@@ -4,7 +4,8 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
         version="2.5">
-    <display-name>Auth0 Servlet Example</display-name>
+    <display-name>Auth0 Servlet Sample</display-name>
+
     <!-- Servlets -->
     <servlet>
         <servlet-name>Home</servlet-name>
@@ -66,6 +67,7 @@
         <filter-name>AuthFilter</filter-name>
         <url-pattern>/portal/*</url-pattern>
     </filter-mapping>
+
     <!-- Error Pages-->
     <error-page>
         <error-code>404</error-code>
@@ -87,6 +89,4 @@
         <param-name>auth0.client_secret</param-name>
         <param-value>{CLIENT_SECRET}</param-value>
     </context-param>
-
-
 </web-app>

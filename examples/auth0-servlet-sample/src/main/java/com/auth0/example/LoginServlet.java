@@ -1,8 +1,6 @@
 package com.auth0.example;
 
-import com.auth0.NonceGenerator;
-import com.auth0.NonceStorage;
-import com.auth0.RequestNonceStorage;
+import com.auth0.NonceUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -12,24 +10,16 @@ import java.io.IOException;
 
 public class LoginServlet extends HttpServlet {
 
-    private final NonceGenerator nonceGenerator = new NonceGenerator();
-
     @Override
-    protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
+    protected void doGet(final HttpServletRequest req, final HttpServletResponse res)
             throws ServletException, IOException {
-        final NonceStorage nonceStorage = new RequestNonceStorage(request);
-        String nonce = nonceStorage.getState();
-        if (nonce == null) {
-            nonce = nonceGenerator.generateNonce();
-            nonceStorage.setState(nonce);
-        }
+        // add a Nonce value to session storage
+        NonceUtils.addNonceToStorage(req);
         final String clientId = getServletContext().getInitParameter("auth0.client_id");
         final String domain = getServletContext().getInitParameter("auth0.domain");
-        request.setAttribute("clientId", clientId);
-        request.setAttribute("domain", domain);
-//        request.setAttribute("state", "nonce=" + nonce);
-        request.setAttribute("state", nonce);
-        request.getRequestDispatcher("/login.jsp").forward(request, response);
+        req.setAttribute("clientId", clientId);
+        req.setAttribute("domain", domain);
+        req.getRequestDispatcher("/login.jsp").forward(req, res);
     }
 
 }

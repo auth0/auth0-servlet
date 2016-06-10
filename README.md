@@ -6,40 +6,69 @@ You can use  [Auth0](https://www.auth0.com) to add username/password authenticat
 
 ## Learn how to use it
 
-[Please read this tutorial](https://docs.auth0.com/server-platforms/java) to learn how to use this SDK.
+[Please read this tutorial](https://docs.auth0.com/server-platforms/java-servlet) to learn how to use this SDK.
+
+You may also find our Sample projects the easiest way to learn simply by installing and running, then inspecting the samples code.
 
 ## Extensibility points
-### Auth0 Servlet Callback
+
+### Auth0Config
+
+Please take a look at the sample that accompanies this library for an easy seed project to see this working.
+
+Essentially, `src/main/webapp/WEB-INF/web.xml` is where all the configuration is added.
+
+Here is a breakdown of attributes and what they do:
+
+`auth0.domain` - This is your auth0 domain (tenant you have created when registering with auth0 - account name)
+
+`auth0.clientId` - This is the client id of your auth0 application (see Settings page on auth0 dashboard)
+
+`auth0.clientSecret` - This is the client secret of your auth0 application (see Settings page on auth0 dashboard)
+
+`auth0.onLogoutRedirectTo` - This is the page / view that users of your site are redirected to on logout. Should start with `/`
+
+
+## Extension Points in Library
+
+Most of the library can be extended, overridden or altered according to need. It is designed to provide a base
+library framework but it easy to replace, extend or modify any of the existing classes to customise according to need.
+
+### Auth0CallbackHandler
+
+Designed to be very flexible, the existing implementation may be enough in most cases. However, it is easy to inherit
+ the default implementation and override any super class methods accordingly. The CallbackHandler - expects to receive
+ an authorization code - using OIDC / Oauth2 Authorization Code Grant Flow.
+
+List of functions available for override:
 
 #### protected void onSuccess(HttpServletRequest req, HttpServletResponse resp)
 
-Here you can configure what to do after successful authentication. By default, it redirects to the URL configured in the `web.xml`
+Here you can configure what to do after successful authentication.
 
-####	protected void onFailure(HttpServletRequest req, HttpServletResponse resp, Exception ex) 
+####  protected void onFailure(HttpServletRequest req, HttpServletResponse resp, Exception ex)
 
-Here you can configure what to do after failure authentication. By default, it redirects to the URL configured in the `web.xml`
-			
-#### protected void store(Tokens tokens, Auth0User user, HttpServletRequest req)
+Here you can configure what to do after failure authentication.
 
-Here you can configure where to store the Tokens and the User. By default, they're stored in the `Session` in the `tokens` and `user` fields
+####  protected void store(final Credentials tokens, final Auth0User user, final HttpServletRequest req)
+
+Here you can configure where to store the Tokens and the User. By default, they're stored in the `Session` in the `tokens` and `auth0User` fields
+
+#### protected boolean isValidState(final HttpServletRequest req)
+
+By default, this library expects a Nonce value in the state query param as follows `state=nonce=B4AD596E418F7CE02A703B42F60BAD8F` where `xyz`
+is a randomly generated UUID.
+
+The NonceFactory can be used to generate such a nonce value. State may be needed to hold other attribute values hence why it has its
+own keyed value of `nonce=B4AD596E418F7CE02A703B42F60BAD8F`. For instance in SSO you may need an `externalCallbackUrl` which also needs
+to be stored down in the state param - `state=nonce=B4AD596E418F7CE02A703B42F60BAD8F&externalCallbackUrl=http://localhost:3099/callback`
+
 
 ### Auth0 Filter
 
-#### protected Tokens loadTokens(ServletRequest req, ServletResponse resp)
+Customise according to need. Default behaviour is to test for presence of `Auth0User` and `Tokens` acquired after authentication
+callback. And to parse and verify the validity (including expiration) of the associated JWT id_token.
 
-You can specify where to get the tokens from. If you changed where they're saved in the Callback, then you should change it here. Now, they're saved in the `tokens` field of the `Session`
-
-#### protected Auth0User loadUser(ServletRequest req)
-
-You can specify where to get the User from. If you changed where they're saved in the Callback, then you should change it here. Now, they're saved in the `user` field of the `Session`
-
-#### protected void onSuccess(ServletRequest req, ServletResponse resp, FilterChain next, Auth0User user)
-
-By default, on success we wrap the `Request` with the `Auth0Request` so that we change the `UserPrincipal` to be a `Auth0User`. You can of course change that here.
-
-#### protected void onReject(ServletRequest req, ServletResponse resp, FilterChain next, Auth0User user)
-
-By default, on we redirect to the URL configured in the `web.xml`. You can override this and change that.
 
 ## Issue Reporting
 

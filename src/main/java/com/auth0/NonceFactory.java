@@ -2,25 +2,19 @@ package com.auth0;
 
 import java.util.Random;
 
-public class NonceGenerator {
+/**
+ * Create a token (nonce) that can be stored in State param
+ * to correlate requests with callbacks and ensure validity.
+ * Assists with CSRF prevention
+ */
+public class NonceFactory {
 
-    private final Random randomSource = new Random();
+    private static final Random randomSource = new Random();
 
-    // Taken from tomcat-catalina 7.0.0 CsrfPreventionFilter class
-
-    /**
-     * Generate a once time token (nonce) for authenticating subsequent
-     * requests.
-     * The nonce generation is a simplified version of ManagerBase.generateSessionId().
-     */
-    public String generateNonce() {
+    public static String create() {
         byte random[] = new byte[16];
-
-        // Render the result as a String of hexadecimal digits
         StringBuilder buffer = new StringBuilder();
-
         randomSource.nextBytes(random);
-
         for (int j = 0; j < random.length; j++) {
             byte b1 = (byte) ((random[j] & 0xf0) >> 4);
             byte b2 = (byte) (random[j] & 0x0f);
@@ -33,7 +27,6 @@ public class NonceGenerator {
             else
                 buffer.append((char) ('A' + (b2 - 10)));
         }
-
         return buffer.toString();
     }
 

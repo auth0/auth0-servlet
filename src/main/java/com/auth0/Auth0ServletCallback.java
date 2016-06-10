@@ -1,186 +1,121 @@
 package com.auth0;
 
+import com.auth0.authentication.AuthenticationAPIClient;
+import com.auth0.authentication.result.Credentials;
+import com.auth0.authentication.result.UserProfile;
 import org.apache.commons.lang3.Validate;
-import us.monoid.json.JSONObject;
-import us.monoid.web.JSONResource;
-import us.monoid.web.Resty;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.Properties;
 
 import static java.util.Arrays.asList;
-import static us.monoid.web.Resty.content;
 
 public class Auth0ServletCallback extends HttpServlet {
 
     protected Properties properties = new Properties();
     protected String redirectOnSuccess;
     protected String redirectOnFail;
+    protected AuthenticationAPIClient authenticationAPIClient;
 
-    /**
-     * Fetch properties to be used. User is encourage to override this method.
-     * <p>
-     * Auth0 uses the ServletContext parameters:
-     * <p>
-     * <dl>
-     * <dt>auth0.client_id</dd>
-     * <dd>Application client id</dd>
-     * <dt>auth0.client_secret</dt>
-     * <dd>Application client secret</dd>
-     * <dt>auth0.domain</dt>
-     * <dd>Auth0 domain</dd>
-     * </dl>
-     * <p>
-     * Auth0ServletCallback uses these ServletConfig parameters:
-     * <p>
-     * <dl>
-     * <dt>auth0.redirect_on_success</dt>
-     * <dd>Where to send the user after successful login.</dd>
-     * <dt>auth0.redirect_on_error</dt>
-     * <dd>Where to send the user after failed login.</dd>
-     * </dl>
-     */
+
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-
         redirectOnSuccess = readParameter("auth0.redirect_on_success", config);
-
         redirectOnFail = readParameter("auth0.redirect_on_error", config);
-
-        for (String param : asList("auth0.client_id", "auth0.client_secret",
-                "auth0.domain")) {
+        for (String param : asList("auth0.client_id", "auth0.client_secret", "auth0.domain")) {
             properties.put(param, readParameter(param, config));
+        }
+        if (authenticationAPIClient == null) {
+            final String clientId = (String) properties.get("auth0.client_id");
+            final String clientSecret = (String) properties.get("auth0.client_secret");
+            final String domain = (String) properties.get("auth0.domain");
+            final Auth0 auth0 = new Auth0(clientId, clientSecret, domain);
+            authenticationAPIClient = new AuthenticationAPIClient(auth0);
         }
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException {
-        if (isValidRequest(req, resp)) {
+    public void doGet(final HttpServletRequest req, final HttpServletResponse res)
+            throws IOException, ServletException {
+        if (isValidRequest(req)) {
             try {
-                Tokens tokens = fetchTokens(req);
-                Auth0User user = fetchUser(tokens);
-                store(tokens, user, req);
-                onSuccess(req, resp);
+                final Credentials tokens = fetchTokens(req);
+                final UserProfile userProfile = fetchUserProfile(tokens);
+                store(tokens, new Auth0User(userProfile), req);
+                NonceUtils.removeNonceFromStorage(req);
+                onSuccess(req, res);
             } catch (IllegalArgumentException ex) {
-                onFailure(req, resp, ex);
+                onFailure(req, res, ex);
             } catch (IllegalStateException ex) {
-                onFailure(req, resp, ex);
+                onFailure(req, res, ex);
             }
-
         } else {
-            onFailure(req, resp, new IllegalStateException("Invalid Request"));
+            onFailure(req, res, new IllegalStateException("Invalid state or error"));
         }
     }
 
-    protected void onSuccess(HttpServletRequest req, HttpServletResponse resp)
+    protected void onSuccess(final HttpServletRequest req, final HttpServletResponse res)
             throws ServletException, IOException {
-        // Redirect user to home
-        resp.sendRedirect(req.getContextPath() + redirectOnSuccess);
+        res.sendRedirect(req.getContextPath() + redirectOnSuccess);
     }
 
-    protected void onFailure(HttpServletRequest req, HttpServletResponse resp,
+    protected void onFailure(final HttpServletRequest req, final HttpServletResponse res,
                              Exception ex) throws ServletException, IOException {
         ex.printStackTrace();
-        String redirectOnFailLocation = req.getContextPath() + redirectOnFail;
-        if (req.getQueryString() != null) {
-            redirectOnFailLocation = redirectOnFailLocation + "?" + req.getQueryString();
-        }
-        resp.sendRedirect(redirectOnFailLocation);
+        final String redirectOnFailLocation = req.getContextPath() + redirectOnFail;
+        res.sendRedirect(redirectOnFailLocation);
     }
 
-    protected void store(Tokens tokens, Auth0User user, HttpServletRequest req) {
-        HttpSession session = req.getSession();
-
-        // Save tokens on a persistent session
-        session.setAttribute("auth0tokens", tokens);
-        session.setAttribute("user", user);
+    protected void store(final Credentials tokens, final Auth0User user, final HttpServletRequest req) {
+        SessionUtils.setTokens(req, tokens);
+        SessionUtils.setAuth0User(req, user);
     }
 
-    protected Tokens fetchTokens(HttpServletRequest req) throws IOException {
-        String authorizationCode = getAuthorizationCode(req);
-        Resty resty = createResty();
-
-        String tokenUri = getTokenUri();
-
-        JSONObject json = new JSONObject();
+    protected Credentials fetchTokens(final HttpServletRequest req) throws IOException {
+        final String authorizationCode = getAuthorizationCode(req);
+        final String redirectUri = req.getRequestURL().toString();
+        final String clientSecret = (String) properties.get("auth0.client_secret");
         try {
-            json.put("client_id", properties.get("auth0.client_id"));
-            json.put("client_secret", properties.get("auth0.client_secret"));
-            json.put("redirect_uri", req.getRequestURL().toString());
-            json.put("grant_type", "authorization_code");
-            json.put("code", authorizationCode);
-
-            JSONResource tokenInfo = resty.json(tokenUri, content(json));
-            return new Tokens(tokenInfo.toObject());
-
-        } catch (Exception ex) {
-            throw new IllegalStateException("Cannot get Token from Auth0", ex);
+            final Credentials credentials = authenticationAPIClient
+                    .token(authorizationCode, redirectUri)
+                    .setClientSecret(clientSecret).execute();
+            return credentials;
+        } catch (Auth0Exception e) {
+            throw new IllegalStateException("Cannot get Token from Auth0", e);
         }
     }
 
-    protected Auth0User fetchUser(Tokens tokens) {
-        Resty resty = createResty();
-
-        String userInfoUri = getUserInfoUri(tokens.getAccessToken());
-
+    protected UserProfile fetchUserProfile(final Credentials tokens) {
+        final String idToken = tokens.getIdToken();
         try {
-            JSONResource json = resty.json(userInfoUri);
-            return new Auth0User(json.toObject());
+            final UserProfile profile = authenticationAPIClient.tokenInfo(idToken).execute();
+            return profile;
         } catch (Exception ex) {
-            throw new IllegalStateException("Cannot get User from Auth0", ex);
+            throw new IllegalStateException("Cannot get Auth0User from Auth0", ex);
         }
     }
 
-    protected String getTokenUri() {
-        return getUri("/oauth/token");
-    }
-
-    protected String getUserInfoUri(String accessToken) {
-        return getUri("/userinfo?access_token=" + accessToken);
-    }
-
-    protected String getUri(String path) {
-        return String.format("https://%s%s", (String) properties.get("auth0.domain"), path);
-    }
-
-    protected String getAuthorizationCode(HttpServletRequest req) {
-        String code = req.getParameter("code");
+    protected String getAuthorizationCode(final HttpServletRequest req) {
+        final String code = req.getParameter("code");
         Validate.notNull(code);
         return code;
     }
 
-    /**
-     * Override this method to specify a different Resty client. For example, if
-     * you want to add a proxy, this would be the place to set it
-     *
-     * @return {@link Resty} that will be used to perform all requests to Auth0
-     */
-    protected Resty createResty() {
-        return new Resty();
-    }
-
-    protected boolean isValidRequest(HttpServletRequest req,
-                                     HttpServletResponse resp) throws IOException {
-        if (hasError(req) || !isValidState(req)) {
+    protected boolean isValidRequest(final HttpServletRequest req) throws IOException {
+        if (hasError(req)) {
             return false;
         }
-        return true;
+        final String stateFromRequest = req.getParameter("state");
+        return NonceUtils.matchesNonceInStorage(req, stateFromRequest);
     }
 
-    protected boolean isValidState(HttpServletRequest req) {
-        return req.getParameter("state")
-                .equals(getNonceStorage(req).getState());
-    }
-
-    protected static boolean hasError(HttpServletRequest req) {
+    protected static boolean hasError(final HttpServletRequest req) {
         return req.getParameter("error") != null;
     }
 
@@ -201,18 +136,5 @@ public class Auth0ServletCallback extends HttpServlet {
         return value != null && value.trim().length() > 0;
     }
 
-    /**
-     * Override this method to specify a different NonceStorage:
-     * <p>
-     * <code>
-     * protected NonceStorage getNonceStorage(HttpServletRequest request) {
-     * return MyNonceStorageImpl(request);
-     * }
-     * </code>
-     */
-
-    protected NonceStorage getNonceStorage(HttpServletRequest request) {
-        return new RequestNonceStorage(request);
-    }
 
 }

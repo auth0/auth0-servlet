@@ -1,6 +1,7 @@
 package com.auth0;
 
 
+import com.auth0.authentication.result.Credentials;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.JWTVerifyException;
 import org.apache.commons.codec.binary.Base64;
@@ -8,12 +9,16 @@ import org.apache.commons.codec.binary.Base64;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 
+/**
+ * Handles interception on a secured endpoint and does JWT Verification
+ * Ensures for instance expired JWT tokens are not permitted access
+ * Success and Failure navigation options are also configurable
+ */
 public class Auth0Filter implements Filter {
 
     private String onFailRedirectTo;
@@ -21,7 +26,7 @@ public class Auth0Filter implements Filter {
 
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
+    public void init(final FilterConfig filterConfig) throws ServletException {
         onFailRedirectTo = filterConfig.getInitParameter("auth0.redirect_on_authentication_error");
         final String clientSecret = filterConfig.getServletContext().getInitParameter("auth0.client_secret");
         final String clientId = filterConfig.getServletContext().getInitParameter("auth0.client_id");
@@ -31,40 +36,37 @@ public class Auth0Filter implements Filter {
         }
     }
 
-    protected Tokens loadTokens(ServletRequest req, ServletResponse resp) {
-        HttpSession session = ((HttpServletRequest) req).getSession();
-        return (Tokens) session.getAttribute("auth0tokens");
+    protected void onSuccess(final ServletRequest req, final ServletResponse res, final FilterChain next, final Auth0User auth0User)
+            throws IOException, ServletException {
+        final Auth0RequestWrapper auth0RequestWrapper = new Auth0RequestWrapper((HttpServletRequest) req, auth0User);
+        next.doFilter(auth0RequestWrapper, res);
     }
 
-    protected Auth0User loadUser(ServletRequest req) {
-        HttpSession session = ((HttpServletRequest) req).getSession();
-        return (Auth0User) session.getAttribute("user");
+    protected void onReject(final HttpServletResponse res) throws IOException, ServletException {
+        res.sendRedirect(onFailRedirectTo);
     }
 
-    protected void onSuccess(ServletRequest req, ServletResponse resp, FilterChain next, Auth0User user) throws IOException, ServletException {
-        Auth0RequestWrapper auth0RequestWrapper = new Auth0RequestWrapper(user, (HttpServletRequest) req);
-        next.doFilter(auth0RequestWrapper, resp);
-    }
-
-    protected void onReject(ServletRequest req, ServletResponse response, FilterChain next) throws IOException, ServletException {
-        HttpServletResponse resp = (HttpServletResponse) response;
-        HttpServletRequest request = (HttpServletRequest) req;
-        resp.sendRedirect(request.getContextPath() + onFailRedirectTo + "?"
-                + request.getQueryString());
+    protected boolean tokensExist(final Credentials credentials) {
+        if (credentials == null) {
+            return false;
+        }
+        return credentials.getIdToken() != null && credentials.getAccessToken() != null;
     }
 
     @Override
-    public void doFilter(ServletRequest req, ServletResponse res,
-                         FilterChain next) throws IOException, ServletException {
-        final Tokens tokens = loadTokens(req, res);
-        if (tokens == null || !tokens.exist()) {
-            onReject(req, res, next);
+    public void doFilter(final ServletRequest request, final ServletResponse response,
+                         final FilterChain next) throws IOException, ServletException {
+        final HttpServletRequest req = (HttpServletRequest) request;
+        final HttpServletResponse res = (HttpServletResponse) response;
+        final Credentials tokens = SessionUtils.getTokens(req);
+        if (!tokensExist(tokens)) {
+            onReject(res);
             return;
         }
         try {
-            final Auth0User user = loadUser(req);
             jwtVerifier.verify(tokens.getIdToken());
-            onSuccess(req, res, next, user);
+            final Auth0User auth0User = SessionUtils.getAuth0User(req);
+            onSuccess(req, res, next, auth0User);
         } catch (InvalidKeyException e) {
             throw new Auth0Exception("InvalidKeyException thrown while decoding JWT token " + e.getLocalizedMessage());
         } catch (NoSuchAlgorithmException e) {
