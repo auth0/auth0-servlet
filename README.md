@@ -69,6 +69,11 @@ to be stored down in the state param - `state=nonce=B4AD596E418F7CE02A703B42F60B
 Customise according to need. Default behaviour is to test for presence of `Auth0User` and `Tokens` acquired after authentication
 callback. And to parse and verify the validity (including expiration) of the associated JWT id_token.
 
+### Auth0User
+
+Represents the normalized User Profile received from Auth0 after successful authentication. For any custom profile attributes, you can
+ get these from the `extraInfo` attribute which is a Map of any attributes received that were not already
+ explicitly mapped.
 
 ## Issue Reporting
 
