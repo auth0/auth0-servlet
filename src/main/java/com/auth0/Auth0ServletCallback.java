@@ -3,6 +3,7 @@ package com.auth0;
 import com.auth0.authentication.AuthenticationAPIClient;
 import com.auth0.authentication.result.Credentials;
 import com.auth0.authentication.result.UserProfile;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
 import javax.servlet.ServletConfig;
@@ -119,22 +120,16 @@ public class Auth0ServletCallback extends HttpServlet {
         return req.getParameter("error") != null;
     }
 
-    protected static String readParameter(String parameter, ServletConfig config) {
-        String first = config.getInitParameter(parameter);
-        if (hasValue(first)) {
-            return first;
+    protected static String readParameter(final String parameter, final ServletConfig config) {
+        final String initParam = config.getInitParameter(parameter);
+        if (StringUtils.isNotEmpty(initParam)) {
+            return initParam;
         }
-        final String second = config.getServletContext().getInitParameter(
-                parameter);
-        if (hasValue(second)) {
-            return second;
+        final String servletContextInitParam = config.getServletContext().getInitParameter(parameter);
+        if (StringUtils.isNotEmpty(servletContextInitParam)) {
+            return servletContextInitParam;
         }
         throw new IllegalArgumentException(parameter + " needs to be defined");
     }
-
-    protected static boolean hasValue(String value) {
-        return value != null && value.trim().length() > 0;
-    }
-
 
 }
