@@ -1,10 +1,7 @@
 package com.auth0;
 
-import com.auth0.authentication.AuthenticationAPIClient;
-import com.auth0.authentication.result.Credentials;
 import com.auth0.authentication.result.UserProfile;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Validate;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -21,8 +18,7 @@ public class Auth0ServletCallback extends HttpServlet {
     protected Properties properties = new Properties();
     protected String redirectOnSuccess;
     protected String redirectOnFail;
-    protected AuthenticationAPIClient authenticationAPIClient;
-
+    protected Auth0Client auth0Client;
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -32,13 +28,10 @@ public class Auth0ServletCallback extends HttpServlet {
         for (String param : asList("auth0.client_id", "auth0.client_secret", "auth0.domain")) {
             properties.put(param, readParameter(param, config));
         }
-        if (authenticationAPIClient == null) {
-            final String clientId = (String) properties.get("auth0.client_id");
-            final String clientSecret = (String) properties.get("auth0.client_secret");
-            final String domain = (String) properties.get("auth0.domain");
-            final Auth0 auth0 = new Auth0(clientId, clientSecret, domain);
-            authenticationAPIClient = new AuthenticationAPIClient(auth0);
-        }
+        final String clientId = (String) properties.get("auth0.client_id");
+        final String clientSecret = (String) properties.get("auth0.client_secret");
+        final String domain = (String) properties.get("auth0.domain");
+        this.auth0Client = new Auth0ClientImpl(clientId, clientSecret, domain);
     }
 
     @Override
@@ -47,7 +40,7 @@ public class Auth0ServletCallback extends HttpServlet {
         if (isValidRequest(req)) {
             try {
                 final Tokens tokens = fetchTokens(req);
-                final UserProfile userProfile = fetchUserProfile(tokens);
+                final UserProfile userProfile = auth0Client.getUserProfile(tokens);
                 store(tokens, new Auth0User(userProfile), req);
                 NonceUtils.removeNonceFromStorage(req);
                 onSuccess(req, res);
@@ -79,34 +72,9 @@ public class Auth0ServletCallback extends HttpServlet {
     }
 
     protected Tokens fetchTokens(final HttpServletRequest req) throws IOException {
-        final String authorizationCode = getAuthorizationCode(req);
+        final String authorizationCode = req.getParameter("code");
         final String redirectUri = req.getRequestURL().toString();
-        final String clientSecret = (String) properties.get("auth0.client_secret");
-        try {
-            final Credentials creds = authenticationAPIClient
-                    .token(authorizationCode, redirectUri)
-                    .setClientSecret(clientSecret).execute();
-            final Tokens tokens = new Tokens(creds.getIdToken(), creds.getAccessToken(), creds.getType(), creds.getRefreshToken());
-            return tokens;
-        } catch (Auth0Exception e) {
-            throw new IllegalStateException("Cannot get Token from Auth0", e);
-        }
-    }
-
-    protected UserProfile fetchUserProfile(final Tokens tokens) {
-        final String idToken = tokens.getIdToken();
-        try {
-            final UserProfile profile = authenticationAPIClient.tokenInfo(idToken).execute();
-            return profile;
-        } catch (Exception ex) {
-            throw new IllegalStateException("Cannot get Auth0User from Auth0", ex);
-        }
-    }
-
-    protected String getAuthorizationCode(final HttpServletRequest req) {
-        final String code = req.getParameter("code");
-        Validate.notNull(code);
-        return code;
+        return auth0Client.getTokens(authorizationCode, redirectUri);
     }
 
     protected boolean isValidRequest(final HttpServletRequest req) throws IOException {
