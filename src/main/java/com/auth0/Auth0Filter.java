@@ -46,11 +46,11 @@ public class Auth0Filter implements Filter {
         res.sendRedirect(onFailRedirectTo);
     }
 
-    protected boolean tokensExist(final Credentials credentials) {
-        if (credentials == null) {
+    protected boolean tokensExist(final Tokens tokens) {
+        if (tokens == null) {
             return false;
         }
-        return credentials.getIdToken() != null && credentials.getAccessToken() != null;
+        return tokens.getIdToken() != null && tokens.getAccessToken() != null;
     }
 
     @Override
@@ -58,7 +58,7 @@ public class Auth0Filter implements Filter {
                          final FilterChain next) throws IOException, ServletException {
         final HttpServletRequest req = (HttpServletRequest) request;
         final HttpServletResponse res = (HttpServletResponse) response;
-        final Credentials tokens = SessionUtils.getTokens(req);
+        final Tokens tokens = SessionUtils.getTokens(req);
         if (!tokensExist(tokens)) {
             onReject(res);
             return;

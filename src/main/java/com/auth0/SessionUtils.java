@@ -1,7 +1,5 @@
 package com.auth0;
 
-import com.auth0.authentication.result.Credentials;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
@@ -27,11 +25,11 @@ public class SessionUtils {
         getSession(req).setAttribute(STATE, state);
     }
 
-    public static Credentials getTokens(final HttpServletRequest req) {
-        return (Credentials) getSession(req).getAttribute(TOKENS);
+    public static Tokens getTokens(final HttpServletRequest req) {
+        return (Tokens) getSession(req).getAttribute(TOKENS);
     }
 
-    public static void setTokens(final HttpServletRequest req, final Credentials tokens) {
+    public static void setTokens(final HttpServletRequest req, final Tokens tokens) {
         getSession(req).setAttribute(TOKENS, tokens);
     }
 

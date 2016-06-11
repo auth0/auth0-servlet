@@ -6,6 +6,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import java.io.Serializable;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Date;
@@ -16,7 +17,9 @@ import java.util.Map;
  * Convenience wrapper around the Auth0 UserProfile
  * object (GSON) and implements Principal interface
  */
-public class Auth0User implements Principal {
+public class Auth0User implements Principal, Serializable {
+
+    private static final long serialVersionUID = 2371882820082543721L;
 
     private String userId;
     private String name;
