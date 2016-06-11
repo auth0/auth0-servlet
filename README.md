@@ -62,7 +62,7 @@ Here you can configure what to do after successful authentication.
 
 Here you can configure what to do after failure authentication.
 
-####  protected void store(final Credentials tokens, final Auth0User user, final HttpServletRequest req)
+####  protected void store(final Tokens tokens, final Auth0User user, final HttpServletRequest req)
 
 Here you can configure where to store the Tokens and the User. By default, they're stored in the `Session` in the `tokens` and `auth0User` fields
 
