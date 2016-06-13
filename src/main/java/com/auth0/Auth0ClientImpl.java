@@ -5,6 +5,9 @@ import com.auth0.authentication.result.Credentials;
 import com.auth0.authentication.result.UserProfile;
 import org.apache.commons.lang3.Validate;
 
+/**
+ * Wrapper implementation around Auth0 service calls
+ */
 public class Auth0ClientImpl implements Auth0Client {
 
     protected final String clientSecret;
@@ -30,10 +33,11 @@ public class Auth0ClientImpl implements Auth0Client {
     }
 
     @Override
-    public UserProfile getUserProfile(final Tokens tokens) {
+    public Auth0User getUserProfile(final Tokens tokens) {
         Validate.notNull(tokens);
         final String idToken = tokens.getIdToken();
-        return authenticationAPIClient.tokenInfo(idToken).execute();
+        final UserProfile userProfile = authenticationAPIClient.tokenInfo(idToken).execute();
+        return new Auth0User(userProfile);
     }
 
 }

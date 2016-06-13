@@ -1,6 +1,5 @@
 package com.auth0;
 
-import com.auth0.authentication.result.UserProfile;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.ServletConfig;
@@ -40,13 +39,11 @@ public class Auth0ServletCallback extends HttpServlet {
         if (isValidRequest(req)) {
             try {
                 final Tokens tokens = fetchTokens(req);
-                final UserProfile userProfile = auth0Client.getUserProfile(tokens);
-                store(tokens, new Auth0User(userProfile), req);
+                final Auth0User auth0User = auth0Client.getUserProfile(tokens);
+                store(tokens, auth0User, req);
                 NonceUtils.removeNonceFromStorage(req);
                 onSuccess(req, res);
-            } catch (IllegalArgumentException ex) {
-                onFailure(req, res, ex);
-            } catch (IllegalStateException ex) {
+            } catch (RuntimeException ex) {
                 onFailure(req, res, ex);
             }
         } else {
@@ -78,18 +75,19 @@ public class Auth0ServletCallback extends HttpServlet {
     }
 
     protected boolean isValidRequest(final HttpServletRequest req) throws IOException {
-        if (hasError(req)) {
-            return false;
-        }
+        return !hasError(req) && isValidState(req);
+    }
+
+    protected boolean hasError(final HttpServletRequest req) {
+        return req.getParameter("error") != null;
+    }
+
+    protected boolean isValidState(final HttpServletRequest req) {
         final String stateFromRequest = req.getParameter("state");
         return NonceUtils.matchesNonceInStorage(req, stateFromRequest);
     }
 
-    protected static boolean hasError(final HttpServletRequest req) {
-        return req.getParameter("error") != null;
-    }
-
-    protected static String readParameter(final String parameter, final ServletConfig config) {
+    protected String readParameter(final String parameter, final ServletConfig config) {
         final String initParam = config.getInitParameter(parameter);
         if (StringUtils.isNotEmpty(initParam)) {
             return initParam;
