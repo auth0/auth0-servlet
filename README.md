@@ -35,12 +35,12 @@ compile 'com.auth0:auth0-servlet:3.0.0'
 
 ## Learn how to use it
 
-Perhaps the best way to learn how to use this library is to study the [Auth0 Servlet Sample](https://auth0.com/docs/quickstart/webapp/java/)
+Perhaps the best way to learn how to use this library is to study the [Auth0 Servlet Sample](https://github.com/auth0-samples/auth0-servlet-sample)
 and the README for that sample. Information on configuration and extension points is also provided in this README document below together with a link
 to our tutorial on using this library.
 
 
-[Please read this tutorial](https://docs.auth0.com/server-platforms/java-servlet) to learn how to use this SDK.
+[Please read this tutorial](https://auth0.com/docs/quickstart/webapp/java/) to learn how to use this SDK.
 
 
 ## Extensibility points
