@@ -23,7 +23,7 @@ import java.util.List;
  */
 public class QueryParamUtils {
 
-    public static String addOrReplaceInQueryParams(String queryParams, final String key, final String value) {
+    public static String addOrReplaceInQueryParams(final String queryParams, final String key, final String value) {
         Validate.notNull(queryParams);
         Validate.notNull(key);
         Validate.notNull(value);

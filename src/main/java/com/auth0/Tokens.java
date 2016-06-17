@@ -11,7 +11,7 @@ public class Tokens implements Serializable {
     private String type;
     private String refreshToken;
 
-    public Tokens(String idToken, String accessToken, String type, String refreshToken) {
+    public Tokens(final String idToken, final String accessToken, final String type, final String refreshToken) {
         this.idToken = idToken;
         this.accessToken = accessToken;
         this.type = type;
