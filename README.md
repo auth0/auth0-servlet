@@ -1,10 +1,13 @@
 # Auth0 Servlet
 
-A simple, plain Java library that allows you to use Auth0 with Java for server-side MVC web apps.
-Validates the JWT from Auth0 in every API call to assert authentication according to configuration. If your application only needs secured
-endpoints and the ability to programmatically work with a Principal object for GrantedAuthority checks this library is a good fit. However,
-if you are already using Java Spring and wish to leverage fully Java Spring Security - with powerful support for Security Annotations, Security
-JSTL Tag libraries, Fine-grained Annotation level method security and URL endpoint security at the Role / Group level - then see this project
+A simple (plain) Java library that allows you to use Auth0 with Java for server-side MVC web apps. Aims not to introduce specific
+frameworks or libraries such as Spring. Validates the JWT from Auth0 in every API call to assert authentication according to configuration.
+If your application only needs secured endpoints and the ability to programmatically work with a Principal object for GrantedAuthority
+checks this library is a good fit.
+
+However, if you are already using Java Spring and wish to leverage fully Java Spring Security -
+with powerful support for Security Annotations, Security JSTL Tag libraries, Fine-grained Annotation level method security and URL endpoint
+security at the Role / Group level - then see this project
 [Auth0 Spring Security MVC](https://github.com/auth0/auth0-spring-security-mvc) and associated sample
 [Auth0 Spring Security MVC Sample](https://github.com/auth0-samples/auth0-spring-security-mvc-sample)
 
@@ -12,12 +15,30 @@ If you are not ready for Java Spring Security yet, but would prefer to be using 
 over configuration, dependency injection and so on, then this project [Auth0 Spring MVC](https://github.com/auth0/auth0-spring-mvc)
 and associated sample [Auth0 Spring MVC Sample](https://github.com/auth0-samples/auth0-spring-mvc-sample)
 
+## Download
+
+Get Auth0 Servlet via Maven:
+
+```xml
+<dependency>
+  <groupId>com.auth0</groupId>
+  <artifactId>auth0-servlet</artifactId>
+  <version>3.0.0</version>
+</dependency>
+```
+
+or Gradle:
+
+```gradle
+compile 'com.auth0:auth0-servlet:3.0.0'
+```
 
 ## Learn how to use it
 
-Right now, the best way to learn how to use this library is to study the [Auth0 Servlet Sample](https://github.com/auth0-samples/auth0-servlet-sample)
-and the README for that sample. Our official documentation shall be fully updated shortly, together with Maven publication of the latest release. For
-dev testing, just install locally with maven to get started right away. There is also a fairly comprehensive set of README information provided below.
+Perhaps the best way to learn how to use this library is to study the [Auth0 Servlet Sample](https://auth0.com/docs/quickstart/webapp/java/)
+and the README for that sample. Information on configuration and extension points is also provided in this README document below together with a link
+to our tutorial on using this library.
+
 
 [Please read this tutorial](https://docs.auth0.com/server-platforms/java-servlet) to learn how to use this SDK.
 
@@ -28,7 +49,7 @@ dev testing, just install locally with maven to get started right away. There is
 
 Please take a look at the sample that accompanies this library for an easy seed project to see this working.
 
-Essentially, `src/main/webapp/WEB-INF/web.xml` is where all the configuration is added.
+Essentially, `src/main/webapp/WEB-INF/web.xml` is where all the configuration is added. See the sample for completed example `web.xml` file.
 
 Here is a breakdown of attributes and what they do:
 
@@ -39,6 +60,12 @@ Here is a breakdown of attributes and what they do:
 `auth0.clientSecret` - This is the client secret of your auth0 application (see Settings page on auth0 dashboard)
 
 `auth0.onLogoutRedirectTo` - This is the page / view that users of your site are redirected to on logout. Should start with `/`
+
+`auth0.redirect_on_success` - This is the landing page URL context path for a successful authentication. Should start with `/`
+
+`auth0.redirect_on_error` - This is the URL context path for the page to redirect to upon failure. Should start with `/`
+
+`auth0.redirect_on_authentication_error` - This is the URL context path for the page to redirect to upon login failure. Should start with `/`
 
 
 ## Extension Points in Library
