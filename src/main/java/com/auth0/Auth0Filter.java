@@ -1,10 +1,11 @@
 package com.auth0;
 
 
-import com.auth0.authentication.result.Credentials;
+import com.auth0.jwt.Algorithm;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.JWTVerifyException;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.Validate;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -12,7 +13,10 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.SignatureException;
+
+import static com.auth0.jwt.pem.PemReader.readPublicKey;
 
 /**
  * Handles interception on a secured endpoint and does JWT Verification
@@ -28,11 +32,37 @@ public class Auth0Filter implements Filter {
     @Override
     public void init(final FilterConfig filterConfig) throws ServletException {
         onFailRedirectTo = filterConfig.getInitParameter("auth0.redirect_on_authentication_error");
-        final String clientSecret = filterConfig.getServletContext().getInitParameter("auth0.client_secret");
+        Validate.notNull(onFailRedirectTo);
         final String clientId = filterConfig.getServletContext().getInitParameter("auth0.client_id");
-        jwtVerifier = new JWTVerifier(new Base64(true).decodeBase64(clientSecret), clientId);
-        if (onFailRedirectTo == null) {
-            throw new IllegalArgumentException("auth0.redirect_on_authentication_error parameter of " + this.getClass().getName() + " cannot be null");
+        Validate.notNull(clientId);
+        final String signingAlgorithmStr = filterConfig.getServletContext().getInitParameter("auth0.signing_algorithm");
+        // default to HS256 for backwards compatibility
+        final Algorithm signingAlgorithm = (signingAlgorithmStr != null) ? Algorithm.valueOf(signingAlgorithmStr) : Algorithm.HS256;
+        switch (signingAlgorithm) {
+            case HS256:
+            case HS384:
+            case HS512:
+                final String clientSecret = filterConfig.getServletContext().getInitParameter("auth0.client_secret");
+                Validate.notNull(clientSecret);
+                jwtVerifier = new JWTVerifier(new Base64(true).decodeBase64(clientSecret), clientId);
+                return;
+            case RS256:
+            case RS384:
+            case RS512:
+                final String publicKeyPath = filterConfig.getServletContext().getInitParameter("auth0.public_key_path");
+                Validate.notNull(publicKeyPath);
+                try {
+                    final ServletContext context = filterConfig.getServletContext();
+                    final String publicKeyRealPath = context.getRealPath(publicKeyPath);
+                    final PublicKey publicKey = readPublicKey(publicKeyRealPath);
+                    Validate.notNull(publicKey);
+                    jwtVerifier = new JWTVerifier(publicKey, clientId);
+                    return;
+                } catch (Exception e) {
+                    throw new IllegalStateException(e.getMessage(), e.getCause());
+                }
+            default:
+                throw new IllegalStateException("Unsupported signing method: " + signingAlgorithm.getValue());
         }
     }
 
