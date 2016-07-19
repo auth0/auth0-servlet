@@ -7,6 +7,7 @@ import org.apache.commons.lang3.Validate;
 
 /**
  * Wrapper implementation around Auth0 service calls
+ * to retrieve UserProfile and Tokens information
  */
 public class Auth0ClientImpl implements Auth0Client {
 
