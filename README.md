@@ -33,15 +33,25 @@ or Gradle:
 compile 'com.auth0:auth0-servlet:3.1.0'
 ```
 
+## The Oauth Server Side Protocol
+
+This library is expected to be used in order to successfully implement the [Oauth Server Side](https://auth0.com/docs/protocols#oauth-server-side) protocol. This protocol is best
+suited for websites that need:
+  
+  * Authenticated Users
+  * Access to 3rd party APIs on behalf of the logged in user
+  
+In the literature you might find this flow referred to as Authorization Code Grant. The full spec of this flow is [here](https://tools.ietf.org/html/rfc6749#section-4.1)
+
 ## Learn how to use it
-
-Perhaps the best way to learn how to use this library is to study the [Auth0 Servlet Sample](https://github.com/auth0-samples/auth0-servlet-sample)
-and the README for that sample. Information on configuration and extension points is also provided in this README document below together with a link
-to our tutorial on using this library.
-
 
 [Please read this tutorial](https://auth0.com/docs/quickstart/webapp/java/) to learn how to use this SDK.
 
+Perhaps the best way to learn how to use this library is to study the [Auth0 Servlet Sample](https://github.com/auth0-samples/auth0-servlet-sample)
+and the README for that sample. 
+
+Information on configuration and extension points is also provided in this README document below together with a link
+to our tutorial on using this library.
 
 ## Extensibility points
 
