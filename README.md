@@ -64,6 +64,8 @@ Here is a breakdown of attributes and what they do:
 
 `auth0.domain` - This is your auth0 domain (tenant you have created when registering with auth0 - account name)
 
+`auth0.issuer` - This is the issuer of the JWT Token (typically full URL of your auth0 tenant account - eg. https://{tenant_name}.auth0.com/)
+
 `auth0.clientId` - This is the client id of your auth0 application (see Settings page on auth0 dashboard)
 
 `auth0.clientSecret` - This is the client secret of your auth0 application (see Settings page on auth0 dashboard)

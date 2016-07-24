@@ -33,6 +33,8 @@ public class Auth0Filter implements Filter {
     public void init(final FilterConfig filterConfig) throws ServletException {
         onFailRedirectTo = filterConfig.getInitParameter("auth0.redirect_on_authentication_error");
         Validate.notNull(onFailRedirectTo);
+        final String issuer = filterConfig.getServletContext().getInitParameter("auth0.issuer");
+        Validate.notNull(issuer);
         final String clientId = filterConfig.getServletContext().getInitParameter("auth0.client_id");
         Validate.notNull(clientId);
         final String signingAlgorithmStr = filterConfig.getServletContext().getInitParameter("auth0.signing_algorithm");
@@ -44,7 +46,7 @@ public class Auth0Filter implements Filter {
             case HS512:
                 final String clientSecret = filterConfig.getServletContext().getInitParameter("auth0.client_secret");
                 Validate.notNull(clientSecret);
-                jwtVerifier = new JWTVerifier(new Base64(true).decodeBase64(clientSecret), clientId);
+                jwtVerifier = new JWTVerifier(new Base64(true).decodeBase64(clientSecret), clientId, issuer);
                 return;
             case RS256:
             case RS384:
@@ -56,7 +58,7 @@ public class Auth0Filter implements Filter {
                     final String publicKeyRealPath = context.getRealPath(publicKeyPath);
                     final PublicKey publicKey = readPublicKey(publicKeyRealPath);
                     Validate.notNull(publicKey);
-                    jwtVerifier = new JWTVerifier(publicKey, clientId);
+                    jwtVerifier = new JWTVerifier(publicKey, clientId, issuer);
                     return;
                 } catch (Exception e) {
                     throw new IllegalStateException(e.getMessage(), e.getCause());
