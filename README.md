@@ -23,14 +23,14 @@ Get Auth0 Servlet via Maven:
 <dependency>
   <groupId>com.auth0</groupId>
   <artifactId>auth0-servlet</artifactId>
-  <version>3.2.0</version>
+  <version>3.3.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```gradle
-compile 'com.auth0:auth0-servlet:3.2.0'
+compile 'com.auth0:auth0-servlet:3.3.0'
 ```
 
 ## The Oauth Server Side Protocol
@@ -52,9 +52,8 @@ source code together with its README file.
 
 Information on configuration and extension points for this library are also provided below. 
 
-## Extensibility points
 
-### Auth0Config
+## Auth0Config
 
 Please take a look at the sample that accompanies this library for an easy seed project to see this working.
 
@@ -96,7 +95,7 @@ The following two attributes are required when configuring your application with
 Most of the library can be extended, overridden or altered according to need. It is designed to provide a base
 library framework but it easy to replace, extend or modify any of the existing classes to customise according to need.
 
-### Auth0CallbackHandler
+### Auth0ServletCallback
 
 Designed to be very flexible, the existing implementation may be enough in most cases. However, it is easy to inherit
  the default implementation and override any super class methods accordingly. The CallbackHandler - expects to receive
@@ -131,7 +130,7 @@ to be stored down in the state param - `state=nonce=B4AD596E418F7CE02A703B42F60B
 Customise according to need. Default behaviour is to test for presence of `Auth0User` and `Tokens` acquired after authentication
 callback. And to parse and verify the validity (including expiration) of the associated JWT id_token.
 
-### Auth0User
+### Auth0User (see auth0 dependency lib)
 
 Represents the normalized User Profile received from Auth0 after successful authentication. For any custom profile attributes, you can
  get these from the `extraInfo` attribute which is a Map of any attributes received that were not already
