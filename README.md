@@ -11,7 +11,7 @@ security at the Role / Group level - then see this project
 [Auth0 Spring Security MVC](https://github.com/auth0/auth0-spring-security-mvc) and associated sample
 [Auth0 Spring Security MVC Sample](https://github.com/auth0-samples/auth0-spring-security-mvc-sample)
 
-If you are not ready for Java Spring Security yet, but would prefer to be using Java Spring then this project [Auth0 Spring MVC](https://github.com/auth0/auth0-spring-mvc)
+If you are not ready for Java Spring Security yet, but would prefer to be using Java Spring then see this project [Auth0 Spring MVC](https://github.com/auth0/auth0-spring-mvc)
 and associated sample [Auth0 Spring MVC Sample](https://github.com/auth0-samples/auth0-spring-mvc-sample)
 
 ## Download
