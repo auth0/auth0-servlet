@@ -14,6 +14,8 @@ security at the Role / Group level - then see this project
 If you are not ready for Java Spring Security yet, but would prefer to be using Java Spring then see this project [Auth0 Spring MVC](https://github.com/auth0/auth0-spring-mvc)
 and associated sample [Auth0 Spring MVC Sample](https://github.com/auth0-samples/auth0-spring-mvc-sample)
 
+If you are additionally interested in having Single Sign-On (SSO) between Java Servlet configured applications, then please take a look at our [auth0-servlet-sso-sample](https://github.com/auth0-samples/auth0-servlet-sso-sample) sample.
+
 ## Download
 
 Get Auth0 Servlet via Maven:
