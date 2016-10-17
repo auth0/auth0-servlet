@@ -36,18 +36,18 @@ public class Auth0ServletCallback extends HttpServlet {
     @Override
     public void doGet(final HttpServletRequest req, final HttpServletResponse res)
             throws IOException, ServletException {
-        if (isValidRequest(req)) {
-            try {
+        try {
+            if (isValidRequest(req)) {
                 final Tokens tokens = fetchTokens(req);
                 final Auth0User auth0User = auth0Client.getUserProfile(tokens);
                 store(tokens, auth0User, req);
                 NonceUtils.removeNonceFromStorage(req);
                 onSuccess(req, res);
-            } catch (RuntimeException ex) {
-                onFailure(req, res, ex);
+            } else {
+                onFailure(req, res, new IllegalStateException("Invalid state or error"));
             }
-        } else {
-            onFailure(req, res, new IllegalStateException("Invalid state or error"));
+        } catch (RuntimeException ex) {
+            onFailure(req, res, ex);
         }
     }
 
