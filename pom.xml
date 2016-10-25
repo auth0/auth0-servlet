@@ -10,7 +10,7 @@
 
 	<groupId>com.auth0</groupId>
 	<artifactId>auth0-servlet</artifactId>
-	<version>3.3.2-SNAPSHOT</version>
+	<version>3.3.2</version>
 	<packaging>jar</packaging>
 
 	<name>auth0-servlet</name>
