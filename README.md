@@ -24,14 +24,14 @@ Get Auth0 Servlet via Maven:
 <dependency>
   <groupId>com.auth0</groupId>
   <artifactId>auth0-servlet</artifactId>
-  <version>3.3.0</version>
+  <version>3.3.2</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```gradle
-compile 'com.auth0:auth0-servlet:3.3.0'
+compile 'com.auth0:auth0-servlet:3.3.2'
 ```
 
 ## The Oauth Server Side Protocol
