@@ -70,6 +70,8 @@ Here is a breakdown of attributes and what they do:
 
 `auth0.clientSecret` - This is the client secret of your auth0 application (see Settings page on auth0 dashboard)
 
+`auth0.base64_encoded_secret` - Indicates if the client secret is base64 url-safe encoded. By default is true.
+
 `auth0.onLogoutRedirectTo` - This is the page / view that users of your site are redirected to on logout. Should start with `/`
 
 `auth0.redirect_on_success` - This is the landing page URL context path for a successful authentication. Should start with `/`

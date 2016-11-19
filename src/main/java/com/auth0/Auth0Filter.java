@@ -50,7 +50,13 @@ public class Auth0Filter implements Filter {
             case HS512:
                 final String clientSecret = filterConfig.getServletContext().getInitParameter("auth0.client_secret");
                 Validate.notNull(clientSecret);
-                jwtVerifier = new JWTVerifier(new Base64(true).decodeBase64(clientSecret), clientId, issuer);
+                final String isSecretEncodedValue = filterConfig.getServletContext().getInitParameter("auth0.base64_encoded_secret");
+                if (isSecretEncodedValue == null || Boolean.valueOf(isSecretEncodedValue)) {
+                    final Base64 base64 = new Base64(true);
+                    jwtVerifier = new JWTVerifier(base64.decode(clientSecret), clientId, issuer);
+                } else {
+                    jwtVerifier = new JWTVerifier(clientSecret, clientId, issuer);
+                }
                 return;
             case RS256:
             case RS384:
