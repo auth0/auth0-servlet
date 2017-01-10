@@ -140,6 +140,20 @@ public class Auth0Filter implements Filter {
         }
     }
 
+    protected String getOnFailRedirectTo() {
+        return onFailRedirectTo;
+    }
+
+    
+    /**
+     * Needed to override doFilter
+     * 
+     * @return JWTVerifier
+     */
+    protected JWTVerifier getJwtVerifier() {
+        return jwtVerifier;
+    }
+
     @Override
     public void destroy() {
     }
