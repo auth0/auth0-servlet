@@ -17,64 +17,17 @@ public class Auth0User implements Serializable {
 
     private static final long serialVersionUID = 2371882820082543721L;
 
-    /**
-     * The userId of the user
-     */
     private final String userId;
-
-    /**
-     * The name assigned to the user
-     */
     private final String name;
-
-    /**
-     * The nickname assigned to the user
-     */
     private final String nickname;
-
-    /**
-     * The picture (gravatar) of the user
-     */
     private final String picture;
-
-    /**
-     * The email assigned to the user
-     */
     private final String email;
-
-    /**
-     * The email verified or not
-     */
     private final Boolean emailVerified;
-
-    /**
-     * The given name assigned to the user
-     */
     private final String givenName;
-
-    /**
-     * The family name assigned to the user
-     */
     private final String familyName;
-
-    /**
-     * The created at date
-     */
     private final Date createdAt;
-
-    /**
-     * Extra values of the user that is not part of the normalized information.
-     */
     private final Map<String, Object> extraInfo;
-
-    /**
-     * The Roles assigned to the user
-     */
     private final List<String> roles;
-
-    /**
-     * The Groups assigned to the user
-     */
     private final List<String> groups;
 
     /**
@@ -82,7 +35,7 @@ public class Auth0User implements Serializable {
      *
      * @param userInfo the User Information from which to extract the information values
      */
-    public Auth0User(final UserInfo userInfo) {
+    Auth0User(final UserInfo userInfo) {
         Map<String, Object> info = new HashMap<>(userInfo.getValues());
         this.userId = removeOrNull(info, "sub", String.class);
         this.name = removeOrNull(info, "name", String.class);
@@ -99,50 +52,110 @@ public class Auth0User implements Serializable {
         this.extraInfo = info;
     }
 
+    /**
+     * Getter for the User unique Identifier.
+     *
+     * @return the user id or null if missing.
+     */
     public String getUserId() {
         return userId;
     }
 
+    /**
+     * Getter for the name.
+     *
+     * @return the name or null if missing.
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Getter for the nickname.
+     *
+     * @return the nickname or null if missing.
+     */
     public String getNickname() {
         return nickname;
     }
 
+    /**
+     * Getter for the picture url.
+     *
+     * @return the picture url or null if missing.
+     */
     public String getPicture() {
         return picture;
     }
 
+    /**
+     * Getter for the email.
+     *
+     * @return the email or null if missing.
+     */
     public String getEmail() {
         return email;
     }
 
+    /**
+     * Whether the user's email was verified or not.
+     *
+     * @return true if the email was verified, false otherwise.
+     */
     public boolean isEmailVerified() {
         return emailVerified;
     }
 
+    /**
+     * Getter for the given name.
+     *
+     * @return the given name or null if missing.
+     */
     public String getGivenName() {
         return givenName;
     }
 
+    /**
+     * Getter for the family name.
+     *
+     * @return the family name or null if missing.
+     */
     public String getFamilyName() {
         return familyName;
     }
 
+    /**
+     * Getter for the Date this user was created.
+     *
+     * @return the Date of creation or null if missing.
+     */
     public Date getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * Getter for the values that are not part of the normalized information.
+     *
+     * @return the extra information.
+     */
     public Map<String, Object> getExtraInfo() {
         return Collections.unmodifiableMap(extraInfo);
     }
 
+    /**
+     * Getter for the roles this user has.
+     *
+     * @return the roles of the user or an empty list if missing.
+     */
     public List<String> getRoles() {
         return Collections.unmodifiableList(roles);
     }
 
+    /**
+     * Getter for the groups this user has.
+     *
+     * @return the groups of the user or an empty list if missing.
+     */
     public List<String> getGroups() {
         return Collections.unmodifiableList(groups);
     }

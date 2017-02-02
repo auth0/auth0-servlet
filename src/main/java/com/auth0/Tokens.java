@@ -3,7 +3,7 @@ package com.auth0;
 import java.io.Serializable;
 
 /**
- * Holds the user's credentials returned by Auth0.
+ * Wrapper for the the user's credentials returned by Auth0.
  * <ul>
  * <li><i>accessToken</i>: Access Token for Auth0 API</li>
  * <li><i>idToken</i>: Identity Token with user information</li>
@@ -38,23 +38,47 @@ public class Tokens implements Serializable {
         this.expiresIn = expiresIn;
     }
 
-
+    /**
+     * Getter for the Access Token.
+     *
+     * @return the Access Token.
+     */
     public String getAccessToken() {
         return accessToken;
     }
 
+    /**
+     * Getter for the Id Token.
+     *
+     * @return the Id Token.
+     */
     public String getIdToken() {
         return idToken;
     }
 
+    /**
+     * Getter for the Refresh Token.
+     *
+     * @return the Refresh Token.
+     */
     public String getRefreshToken() {
         return refreshToken;
     }
 
+    /**
+     * Getter for the token Type .
+     *
+     * @return the Type of the token.
+     */
     public String getType() {
         return type;
     }
 
+    /**
+     * Getter for the Expiration time of the Token.
+     *
+     * @return the expiration time.
+     */
     public long getExpiresIn() {
         return expiresIn;
     }
