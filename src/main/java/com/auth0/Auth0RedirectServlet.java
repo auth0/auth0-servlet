@@ -35,14 +35,14 @@ public class Auth0RedirectServlet extends HttpServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        redirectOnSuccess = readParameter("auth0.redirect_on_success", config);
-        redirectOnFail = readParameter("auth0.redirect_on_error", config);
-        for (String param : asList("auth0.client_id", "auth0.client_secret", "auth0.domain")) {
+        redirectOnSuccess = readParameter("com.auth0.redirect_on_success", config);
+        redirectOnFail = readParameter("com.auth0.redirect_on_error", config);
+        for (String param : asList("com.auth0.client_id", "com.auth0.client_secret", "com.auth0.domain")) {
             properties.put(param, readParameter(param, config));
         }
-        String clientId = (String) properties.get("auth0.client_id");
-        String clientSecret = (String) properties.get("auth0.client_secret");
-        String domain = (String) properties.get("auth0.domain");
+        String clientId = (String) properties.get("com.auth0.client_id");
+        String clientSecret = (String) properties.get("com.auth0.client_secret");
+        String domain = (String) properties.get("com.auth0.domain");
         Validate.notNull(clientId);
         Validate.notNull(clientSecret);
         Validate.notNull(domain);
@@ -62,7 +62,7 @@ public class Auth0RedirectServlet extends HttpServlet {
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         boolean validRequest = isValidRequest(req);
-        SessionUtils.setState(req, null);
+        SessionUtils.removeState(req);
         if (!validRequest) {
             onFailure(req, res, new IllegalStateException("Invalid state or error"));
             return;
@@ -160,7 +160,6 @@ public class Auth0RedirectServlet extends HttpServlet {
 
     private Auth0User fetchUserInfo(Tokens tokens) throws Auth0Exception {
         Validate.notNull(tokens);
-        //TODO: Support legacy too.
         UserInfo info = authAPI
                 .userInfo(tokens.getAccessToken())
                 .execute();

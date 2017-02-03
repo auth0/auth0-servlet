@@ -31,11 +31,16 @@ public abstract class SessionUtils {
      * @param state the state attribute to bind to this session.
      */
     public static void setState(HttpServletRequest req, String state) {
-        if (state == null) {
-            getSession(req).removeAttribute(STATE);
-        } else {
-            getSession(req).setAttribute(STATE, state);
-        }
+        getSession(req).setAttribute(STATE, state);
+    }
+
+    /**
+     * Removes the state attribute from the session.
+     *
+     * @param req the HTTP Servlet request.
+     */
+    public static void removeState(HttpServletRequest req) {
+        req.removeAttribute(STATE);
     }
 
     /**

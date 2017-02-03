@@ -15,11 +15,11 @@
         <servlet-name>RedirectCallback</servlet-name>
         <servlet-class>com.auth0.Auth0RedirectServlet</servlet-class>
         <init-param>
-            <param-name>auth0.redirect_on_success</param-name>
+            <param-name>com.auth0.redirect_on_success</param-name>
             <param-value>/portal/home</param-value>
         </init-param>
         <init-param>
-            <param-name>auth0.redirect_on_error</param-name>
+            <param-name>com.auth0.redirect_on_error</param-name>
             <param-value>/login</param-value>
         </init-param>
     </servlet>
@@ -31,7 +31,7 @@
         <servlet-name>Logout</servlet-name>
         <servlet-class>com.auth0.example.LogoutServlet</servlet-class>
         <init-param>
-            <param-name>onLogoutRedirectTo</param-name>
+            <param-name>com.auth0.onLogoutRedirectTo</param-name>
             <param-value>/login</param-value>
         </init-param>
     </servlet>
@@ -59,7 +59,7 @@
         <filter-name>AuthFilter</filter-name>
         <filter-class>com.auth0.Auth0Filter</filter-class>
         <init-param>
-            <param-name>auth0.redirect_on_authentication_error</param-name>
+            <param-name>com.auth0.redirect_on_authentication_error</param-name>
             <param-value>/login</param-value>
         </init-param>
     </filter>
@@ -76,17 +76,17 @@
 
     <!-- Auth0 Configuration -->
     <context-param>
-        <param-name>auth0.domain</param-name>
+        <param-name>com.auth0.domain</param-name>
         <param-value>{YOUR_AUTH0_DOMAIN}</param-value>
     </context-param>
 
     <context-param>
-        <param-name>auth0.client_id</param-name>
+        <param-name>com.auth0.client_id</param-name>
         <param-value>{YOUR_AUTH0_CLIENT_ID}</param-value>
     </context-param>
 
     <context-param>
-        <param-name>auth0.client_secret</param-name>
+        <param-name>com.auth0.client_secret</param-name>
         <param-value>{YOUR_AUTH0_CLIENT_SECRET}</param-value>
     </context-param>
 

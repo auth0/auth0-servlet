@@ -1,8 +1,8 @@
 package com.auth0.example;
 
 
-import com.auth0.client.auth.AuthAPI;
 import com.auth0.SessionUtils;
+import com.auth0.client.auth.AuthAPI;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -13,21 +13,19 @@ import java.util.Random;
 
 public class LoginServlet extends HttpServlet {
 
-    private static final String REDIRECT_URI = "http://localhost:3099/callback";
-
     @Override
-    protected void doGet(final HttpServletRequest req, final HttpServletResponse res)
-            throws ServletException, IOException {
-        final String clientId = getServletContext().getInitParameter("auth0.client_id");
-        final String clientDomain = getServletContext().getInitParameter("auth0.domain");
-        final String clientSecret = getServletContext().getInitParameter("auth0.client_secret");
+    protected void doGet(final HttpServletRequest req, final HttpServletResponse res) throws ServletException, IOException {
+        final String clientId = getServletContext().getInitParameter("com.auth0.client_id");
+        final String clientDomain = getServletContext().getInitParameter("com.auth0.domain");
+        final String clientSecret = getServletContext().getInitParameter("com.auth0.client_secret");
 
         String state = createState();
         SessionUtils.setState(req, state);
 
         final AuthAPI authAPIClient = new AuthAPI(clientDomain, clientId, clientSecret);
+        String redirectUri = req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort() + "/callback";
         String authorizeUrl = authAPIClient
-                .authorizeUrl(REDIRECT_URI)
+                .authorizeUrl(redirectUri)
                 .withState(state)
                 .build();
         res.sendRedirect(authorizeUrl);

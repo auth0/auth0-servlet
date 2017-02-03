@@ -20,7 +20,7 @@ public class Auth0Filter implements Filter {
      */
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        onFailRedirectTo = filterConfig.getInitParameter("auth0.redirect_on_authentication_error");
+        onFailRedirectTo = filterConfig.getInitParameter("com.auth0.redirect_on_authentication_error");
         Validate.notNull(onFailRedirectTo);
     }
 
