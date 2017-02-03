@@ -15,6 +15,7 @@ public class LoginServlet extends HttpServlet {
 
     @Override
     protected void doGet(final HttpServletRequest req, final HttpServletResponse res) throws ServletException, IOException {
+        final String callbackPath = getServletContext().getInitParameter("com.auth0.onLoginRedirectTo");
         final String clientId = getServletContext().getInitParameter("com.auth0.client_id");
         final String clientDomain = getServletContext().getInitParameter("com.auth0.domain");
         final String clientSecret = getServletContext().getInitParameter("com.auth0.client_secret");
@@ -23,7 +24,7 @@ public class LoginServlet extends HttpServlet {
         SessionUtils.setState(req, state);
 
         final AuthAPI authAPIClient = new AuthAPI(clientDomain, clientId, clientSecret);
-        String redirectUri = req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort() + "/callback";
+        String redirectUri = req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort() + callbackPath;
         String authorizeUrl = authAPIClient
                 .authorizeUrl(redirectUri)
                 .withState(state)

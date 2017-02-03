@@ -26,6 +26,10 @@
     <servlet>
         <servlet-name>Login</servlet-name>
         <servlet-class>com.auth0.example.LoginServlet</servlet-class>
+        <init-param>
+            <param-name>com.auth0.onLoginRedirectTo</param-name>
+            <param-value>/callback</param-value>
+        </init-param>
     </servlet>
     <servlet>
         <servlet-name>Logout</servlet-name>
