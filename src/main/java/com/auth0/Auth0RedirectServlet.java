@@ -69,16 +69,6 @@ public class Auth0RedirectServlet extends HttpServlet {
     }
 
     /**
-     * Getter for the {@link AuthAPI} client used to call Auth0 Server for Authentication.
-     *
-     * @return the instance of the client.
-     */
-    @SuppressWarnings("unused")
-    protected AuthAPI getAuthAPIClient() {
-        return authAPI;
-    }
-
-    /**
      * Actions to take when Auth0 tokens are obtained.
      *
      * @param tokens the current session tokens.

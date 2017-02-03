@@ -6,7 +6,7 @@
     <artifactId>auth0-servlet</artifactId>
     <packaging>war</packaging>
     <version>0.1-SNAPSHOT</version>
-    <name>auth0-servle</name>
+    <name>auth0-servlet</name>
     <url>http://maven.apache.org</url>
 
     <properties>
