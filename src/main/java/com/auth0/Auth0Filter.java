@@ -41,27 +41,14 @@ public class Auth0Filter implements Filter {
     }
 
     /**
-     * Check for existence of id token and access token
-     *
-     * @param tokens the tokens to check existence.
-     * @return boolean whether both id token and access token exist
-     */
-    private boolean tokensExist(Tokens tokens) {
-        if (tokens == null) {
-            return false;
-        }
-        return tokens.getIdToken() != null || tokens.getAccessToken() != null;
-    }
-
-    /**
      * Perform filter check on this request - verify tokens exist
      */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain next) throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
-        Tokens tokens = SessionUtils.getTokens(req);
-        if (!tokensExist(tokens)) {
+        String userId = SessionUtils.getAuth0UserId(req);
+        if (userId == null) {
             onReject(res);
             return;
         }

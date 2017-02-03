@@ -13,7 +13,7 @@ public class LogoutServlet extends HttpServlet {
         if (request.getSession() != null) {
             request.getSession().invalidate();
         }
-        response.sendRedirect(getServletConfig().getInitParameter("onLogoutRedirectTo"));
+        response.sendRedirect(getServletConfig().getInitParameter("com.auth0.onLogoutRedirectTo"));
     }
 
 }

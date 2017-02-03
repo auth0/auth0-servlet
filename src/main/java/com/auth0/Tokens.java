@@ -21,7 +21,7 @@ public class Tokens implements Serializable {
     private final String idToken;
     private final String refreshToken;
     private final String type;
-    private final long expiresIn;
+    private final Long expiresIn;
 
     /**
      * @param accessToken  access token for Auth0 API
@@ -30,7 +30,7 @@ public class Tokens implements Serializable {
      * @param type         token type
      * @param expiresIn    token expiration
      */
-    public Tokens(String accessToken, String idToken, String refreshToken, String type, long expiresIn) {
+    public Tokens(String accessToken, String idToken, String refreshToken, String type, Long expiresIn) {
         this.accessToken = accessToken;
         this.idToken = idToken;
         this.refreshToken = refreshToken;
@@ -79,7 +79,7 @@ public class Tokens implements Serializable {
      *
      * @return the expiration time.
      */
-    public long getExpiresIn() {
+    public Long getExpiresIn() {
         return expiresIn;
     }
 }

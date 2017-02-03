@@ -1,6 +1,5 @@
 package com.auth0.example;
 
-import com.auth0.Auth0User;
 import com.auth0.SessionUtils;
 
 import javax.servlet.ServletException;
@@ -13,9 +12,9 @@ public class HomeServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        final Auth0User user = SessionUtils.getAuth0User(req);
-        if (user != null) {
-            req.setAttribute("user", user);
+        final String userId = SessionUtils.getAuth0UserId(req);
+        if (userId != null) {
+            req.setAttribute("userId", userId);
         }
         req.getRequestDispatcher("/WEB-INF/jsp/home.jsp").forward(req, res);
     }

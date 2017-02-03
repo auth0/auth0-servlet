@@ -27,10 +27,7 @@
         <h3 class="text-muted">App.com</h3>
     </div>
     <div class="jumbotron">
-        <h3>Hello ${user.name}!</h3>
-        <p class="lead">Your nickname is: ${user.nickname}</p>
-        <p class="lead">Your user id is: ${user.userId}</p>
-        <p><img class="avatar" src="${user.picture}"/></p>
+        <h3>Hello ${userId}!</h3>
     </div>
     <div class="row marketing">
         <div class="col-lg-6">
@@ -59,9 +56,6 @@
 </div>
 
 <script type="text/javascript">
-    $(function () {
-        $.growl({title: "Welcome  ${user.nickname}", message: "We hope you enjoy using this site!"});
-    });
     $("#logout").click(function(e) {
         e.preventDefault();
         $("#home").removeClass("active");

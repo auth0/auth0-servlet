@@ -15,7 +15,7 @@ public class LoginServlet extends HttpServlet {
 
     @Override
     protected void doGet(final HttpServletRequest req, final HttpServletResponse res) throws ServletException, IOException {
-        final String callbackPath = getServletContext().getInitParameter("com.auth0.onLoginRedirectTo");
+        final String callbackPath = getServletConfig().getInitParameter("com.auth0.onLoginRedirectTo");
         final String clientId = getServletContext().getInitParameter("com.auth0.client_id");
         final String clientDomain = getServletContext().getInitParameter("com.auth0.domain");
         final String clientSecret = getServletContext().getInitParameter("com.auth0.client_secret");

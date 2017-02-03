@@ -13,9 +13,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Properties;
-
-import static java.util.Arrays.asList;
 
 /**
  * The Servlet endpoint used as the callback handler in the OAuth 2.0 authorization code grant flow.
@@ -23,9 +20,7 @@ import static java.util.Arrays.asList;
  */
 public class Auth0RedirectServlet extends HttpServlet {
 
-    @SuppressWarnings("WeakerAccess")
-    protected AuthAPI authAPI;
-    private Properties properties = new Properties();
+    private AuthAPI authAPI;
     private String redirectOnSuccess;
     private String redirectOnFail;
 
@@ -37,48 +32,59 @@ public class Auth0RedirectServlet extends HttpServlet {
         super.init(config);
         redirectOnSuccess = readParameter("com.auth0.redirect_on_success", config);
         redirectOnFail = readParameter("com.auth0.redirect_on_error", config);
-        for (String param : asList("com.auth0.client_id", "com.auth0.client_secret", "com.auth0.domain")) {
-            properties.put(param, readParameter(param, config));
-        }
-        String clientId = (String) properties.get("com.auth0.client_id");
-        String clientSecret = (String) properties.get("com.auth0.client_secret");
-        String domain = (String) properties.get("com.auth0.domain");
+        String clientId = readParameter("com.auth0.client_id", config);
+        String clientSecret = readParameter("com.auth0.client_secret", config);
+        String domain = readParameter("com.auth0.domain", config);
         Validate.notNull(clientId);
         Validate.notNull(clientSecret);
         Validate.notNull(domain);
+
         authAPI = new AuthAPI(domain, clientId, clientSecret);
     }
 
     /**
-     * Entrypoint for HTTP request
-     * <p>
-     * 1). Responsible for validating the request and ensuring the state value in session storage matches the state value passed to this endpoint.
-     * 2). Exchanging the authorization code received with this HTTP request for auth0 tokens.
-     * 3). Getting the user information associated to the id_token/access_token.
-     * 4). Storing both tokens and user information into session storage.
-     * 5). Clearing the stored state value.
-     * 6). Handling success and any failure outcomes.
+     * Auth0 server will call the redirect_uri with the tokens using the GET method.
+     *
+     * @param req the received request with the tokens in the parameters.
+     * @param res the response to send back to the server.
+     * @throws IOException
+     * @throws ServletException
      */
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        boolean validRequest = isValidRequest(req);
-        SessionUtils.removeState(req);
-        if (!validRequest) {
-            onFailure(req, res, new IllegalStateException("Invalid state or error"));
-            return;
-        }
+        parseRedirectRequest(req, res);
+    }
 
-        String authorizationCode = req.getParameter("code");
-        String redirectUri = req.getRequestURL().toString();
-        Validate.notNull(authorizationCode);
-        Validate.notNull(redirectUri);
+    /**
+     * Auth0 server will call the redirect_uri with the tokens using the POST method when the authorize_url included the 'response_mode=form_post' value.
+     *
+     * @param req the received request with the tokens in the parameters.
+     * @param res the response to send back to the server.
+     * @throws IOException
+     * @throws ServletException
+     */
+    @Override
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
+        parseRedirectRequest(req, res);
+    }
 
-        Tokens tokens = fetchTokens(authorizationCode, redirectUri);
-        Auth0User auth0User = fetchUserInfo(tokens);
-        SessionUtils.setTokens(req, tokens);
-        SessionUtils.setAuth0User(req, auth0User);
+    /**
+     * Getter for the {@link AuthAPI} client used to call Auth0 Server for Authentication.
+     *
+     * @return the instance of the client.
+     */
+    @SuppressWarnings("unused")
+    protected AuthAPI getAuthAPIClient() {
+        return authAPI;
+    }
 
-        onSuccess(req, res);
+    /**
+     * Actions to take when Auth0 tokens are obtained.
+     *
+     * @param tokens the current session tokens.
+     */
+    @SuppressWarnings({"WeakerAccess", "unused"})
+    protected void onAuth0TokensObtained(Tokens tokens) {
     }
 
     /**
@@ -99,6 +105,59 @@ public class Auth0RedirectServlet extends HttpServlet {
         res.sendRedirect(redirectOnFailLocation);
     }
 
+
+    /**
+     * Entrypoint for HTTP request
+     * <p>
+     * 1). Responsible for validating the request and ensuring the state value in session storage matches the state value passed to this endpoint.
+     * 2). Exchanging the authorization code received with this HTTP request for auth0 tokens.
+     * 3). Getting the user information associated to the id_token/access_token.
+     * 4). Storing both tokens and user information into session storage.
+     * 5). Clearing the stored state value.
+     * 6). Handling success and any failure outcomes.
+     */
+    private void parseRedirectRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        boolean validRequest = isValidRequest(req);
+        SessionUtils.removeState(req);
+        if (!validRequest) {
+            onFailure(req, res, new IllegalStateException("Invalid state or error"));
+            return;
+        }
+
+        Tokens tokens = tokensFromRequest(req);
+        String authorizationCode = req.getParameter("code");
+        if (authorizationCode != null) {
+            String redirectUri = req.getRequestURL().toString();
+            Tokens latestTokens = exchangeCodeForTokens(authorizationCode, redirectUri);
+            tokens = mergeTokens(tokens, latestTokens);
+        }
+
+        String userId = fetchUserId(tokens);
+        if (userId == null) {
+            onFailure(req, res, new IllegalStateException("Couldn't obtain the User Id."));
+            return;
+        }
+
+        SessionUtils.setAuth0UserId(req, userId);
+        onAuth0TokensObtained(tokens);
+        onSuccess(req, res);
+    }
+
+    private Tokens tokensFromRequest(HttpServletRequest req) throws Auth0Exception {
+        Long expiresIn = req.getParameter("expires_in") == null ? null : Long.parseLong(req.getParameter("expires_in"));
+        return new Tokens(req.getParameter("access_token"), req.getParameter("id_token"), req.getParameter("refresh_token"), req.getParameter("token_type"), expiresIn);
+    }
+
+    private Tokens exchangeCodeForTokens(String authorizationCode, String redirectUri) throws Auth0Exception {
+        Validate.notNull(authorizationCode);
+        Validate.notNull(redirectUri);
+
+        TokenHolder holder = authAPI
+                .exchangeCode(authorizationCode, redirectUri)
+                .execute();
+        return new Tokens(holder.getAccessToken(), holder.getIdToken(), holder.getRefreshToken(), holder.getTokenType(), holder.getExpiresIn());
+    }
+
     /**
      * Indicates whether the request is deemed valid
      *
@@ -106,7 +165,7 @@ public class Auth0RedirectServlet extends HttpServlet {
      * @return boolean whether this request is deemed valid
      */
     private boolean isValidRequest(HttpServletRequest req) {
-        return !hasError(req) && isValidState(req);
+        return !hasError(req) && hasValidState(req);
     }
 
     /**
@@ -120,16 +179,41 @@ public class Auth0RedirectServlet extends HttpServlet {
     }
 
     /**
-     * Indicates whether the nonce value in storage matches the nonce value passed
+     * Indicates whether the state value in storage matches the state value passed
      * with the http servlet request
      *
      * @param req the http servlet request
-     * @return boolean whether nonce value in storage matches the nonce value in the http request
+     * @return boolean whether state value in storage matches the state value in the http request
      */
-    private boolean isValidState(HttpServletRequest req) {
+    private boolean hasValidState(HttpServletRequest req) {
         String stateFromRequest = req.getParameter("state");
         String stateFromStorage = SessionUtils.getState(req);
         return stateFromRequest != null && stateFromRequest.equals(stateFromStorage);
+    }
+
+    private String fetchUserId(Tokens tokens) throws Auth0Exception {
+        Validate.notNull(tokens.getAccessToken());
+
+        UserInfo info = authAPI
+                .userInfo(tokens.getAccessToken())
+                .execute();
+        return info.getValues().containsKey("sub") ? (String) info.getValues().get("sub") : null;
+    }
+
+    /**
+     * Used to keep the best version of each token included in Tokens.
+     *
+     * @param tokens       the first obtained tokens.
+     * @param latestTokens the latest obtained tokens, usually better than the first.
+     * @return a merged version of Tokens using the latest tokens when possible.
+     */
+    private Tokens mergeTokens(Tokens tokens, Tokens latestTokens) {
+        String accessToken = latestTokens.getAccessToken() != null ? latestTokens.getAccessToken() : tokens.getAccessToken();
+        String idToken = latestTokens.getIdToken() != null ? latestTokens.getIdToken() : tokens.getIdToken();
+        String refreshToken = latestTokens.getRefreshToken() != null ? latestTokens.getRefreshToken() : tokens.getRefreshToken();
+        String type = latestTokens.getType() != null ? latestTokens.getType() : tokens.getType();
+        Long expiresIn = latestTokens.getExpiresIn() != null ? latestTokens.getExpiresIn() : tokens.getExpiresIn();
+        return new Tokens(accessToken, idToken, refreshToken, type, expiresIn);
     }
 
     /**
@@ -139,7 +223,7 @@ public class Auth0RedirectServlet extends HttpServlet {
      * @param config    the servlet config to search
      * @return the parameter value
      */
-    private String readParameter(String parameter, ServletConfig config) {
+    private static String readParameter(String parameter, ServletConfig config) {
         String initParam = config.getInitParameter(parameter);
         if (StringUtils.isNotEmpty(initParam)) {
             return initParam;
@@ -149,21 +233,6 @@ public class Auth0RedirectServlet extends HttpServlet {
             return servletContextInitParam;
         }
         throw new IllegalArgumentException(parameter + " needs to be defined");
-    }
-
-    private Tokens fetchTokens(String authorizationCode, String redirectUri) throws Auth0Exception {
-        TokenHolder holder = authAPI
-                .exchangeCode(authorizationCode, redirectUri)
-                .execute();
-        return new Tokens(holder.getAccessToken(), holder.getIdToken(), holder.getRefreshToken(), holder.getTokenType(), holder.getExpiresIn());
-    }
-
-    private Auth0User fetchUserInfo(Tokens tokens) throws Auth0Exception {
-        Validate.notNull(tokens);
-        UserInfo info = authAPI
-                .userInfo(tokens.getAccessToken())
-                .execute();
-        return new Auth0User(info);
     }
 
 }
