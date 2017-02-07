@@ -39,7 +39,7 @@ public abstract class SessionUtils {
      * @param req the HTTP Servlet request.
      */
     public static void removeState(HttpServletRequest req) {
-        req.removeAttribute(STATE);
+        getSession(req).removeAttribute(STATE);
     }
 
     /**
