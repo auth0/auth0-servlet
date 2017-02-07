@@ -10,12 +10,12 @@ class APIClientHelper {
 
     private final AuthAPI client;
 
-    public APIClientHelper(AuthAPI client) {
+    APIClientHelper(AuthAPI client) {
         this.client = client;
     }
 
 
-    public Tokens exchangeCodeForTokens(String authorizationCode, String redirectUri) throws Auth0Exception {
+    Tokens exchangeCodeForTokens(String authorizationCode, String redirectUri) throws Auth0Exception {
         Validate.notNull(authorizationCode);
         Validate.notNull(redirectUri);
 
@@ -26,7 +26,7 @@ class APIClientHelper {
     }
 
 
-    public String fetchUserId(String accessToken) throws Auth0Exception {
+    String fetchUserId(String accessToken) throws Auth0Exception {
         Validate.notNull(accessToken);
 
         UserInfo info = client
