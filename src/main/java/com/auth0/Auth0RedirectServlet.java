@@ -2,8 +2,6 @@ package com.auth0;
 
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
-import com.auth0.json.auth.TokenHolder;
-import com.auth0.json.auth.UserInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -20,9 +18,18 @@ import java.io.IOException;
  */
 public class Auth0RedirectServlet extends HttpServlet {
 
-    private AuthAPI authAPI;
+    private APIClientHelper clientHelper;
     private String redirectOnSuccess;
     private String redirectOnFail;
+
+    @SuppressWarnings("WeakerAccess")
+    Auth0RedirectServlet(APIClientHelper clientHelper) {
+        this.clientHelper = clientHelper;
+    }
+
+    public Auth0RedirectServlet() {
+        this(null);
+    }
 
     /**
      * Initialize this servlet with required configuration
@@ -32,14 +39,23 @@ public class Auth0RedirectServlet extends HttpServlet {
         super.init(config);
         redirectOnSuccess = readParameter("com.auth0.redirect_on_success", config);
         redirectOnFail = readParameter("com.auth0.redirect_on_error", config);
+        if (clientHelper != null) {
+            return;
+        }
+
         String clientId = readParameter("com.auth0.client_id", config);
         String clientSecret = readParameter("com.auth0.client_secret", config);
         String domain = readParameter("com.auth0.domain", config);
         Validate.notNull(clientId);
         Validate.notNull(clientSecret);
         Validate.notNull(domain);
+        clientHelper = new APIClientHelper(new AuthAPI(domain, clientId, clientSecret));
+    }
 
-        authAPI = new AuthAPI(domain, clientId, clientSecret);
+    @Override
+    public void destroy() {
+        super.destroy();
+        clientHelper = null;
     }
 
     /**
@@ -90,9 +106,7 @@ public class Auth0RedirectServlet extends HttpServlet {
      */
     @SuppressWarnings("WeakerAccess")
     protected void onFailure(HttpServletRequest req, HttpServletResponse res, Exception ex) throws ServletException, IOException {
-        ex.printStackTrace();
-        String redirectOnFailLocation = req.getContextPath() + redirectOnFail;
-        res.sendRedirect(redirectOnFailLocation);
+        res.sendRedirect(req.getContextPath() + redirectOnFail);
     }
 
 
@@ -142,10 +156,7 @@ public class Auth0RedirectServlet extends HttpServlet {
         Validate.notNull(authorizationCode);
         Validate.notNull(redirectUri);
 
-        TokenHolder holder = authAPI
-                .exchangeCode(authorizationCode, redirectUri)
-                .execute();
-        return new Tokens(holder.getAccessToken(), holder.getIdToken(), holder.getRefreshToken(), holder.getTokenType(), holder.getExpiresIn());
+        return clientHelper.exchangeCodeForTokens(authorizationCode, redirectUri);
     }
 
     /**
@@ -184,10 +195,7 @@ public class Auth0RedirectServlet extends HttpServlet {
     private String fetchUserId(Tokens tokens) throws Auth0Exception {
         Validate.notNull(tokens.getAccessToken());
 
-        UserInfo info = authAPI
-                .userInfo(tokens.getAccessToken())
-                .execute();
-        return info.getValues().containsKey("sub") ? (String) info.getValues().get("sub") : null;
+        return clientHelper.fetchUserId(tokens.getAccessToken());
     }
 
     /**
