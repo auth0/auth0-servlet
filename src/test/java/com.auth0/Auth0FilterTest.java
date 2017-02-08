@@ -39,7 +39,7 @@ public class Auth0FilterTest {
 
     @Test
     public void shouldThrowIfRedirectOnAuthenticationErrorUrlIsNull() throws Exception {
-        exception.expect(NullPointerException.class);
+        exception.expect(IllegalArgumentException.class);
 
         Auth0Filter filter = new Auth0Filter();
         FilterConfig config = mock(FilterConfig.class);

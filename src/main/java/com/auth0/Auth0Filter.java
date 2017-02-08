@@ -1,14 +1,14 @@
 package com.auth0;
 
-import org.apache.commons.lang3.Validate;
-
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+import static com.auth0.ServletUtils.readLocalRequiredParameter;
+
 /**
- * Filter class to check if a session exists. This will be true if the the Auth0 User id_token or access_token is available.
+ * Filter class to check if a valid session exists. This will be true if the User Id is present.
  */
 public class Auth0Filter implements Filter {
 
@@ -16,12 +16,13 @@ public class Auth0Filter implements Filter {
 
     /**
      * Called by the web container to indicate to a filter that it is being placed into service.
-     * Initialises configuration setup for this filter
+     * Initialises configuration setup for this filter.
+     * A parameter 'com.auth0.redirect_on_authentication_error' is needed on the Local Filter scope to redirect the user
+     * to the {@link Auth0RedirectServlet} when the authentication is missing.
      */
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        onFailRedirectTo = filterConfig.getInitParameter("com.auth0.redirect_on_authentication_error");
-        Validate.notNull(onFailRedirectTo);
+        onFailRedirectTo = readLocalRequiredParameter("com.auth0.redirect_on_authentication_error", filterConfig);
     }
 
     /**
@@ -41,7 +42,7 @@ public class Auth0Filter implements Filter {
     }
 
     /**
-     * Perform filter check on this request - verify tokens exist
+     * Perform filter check on this request - verify the User Id is present.
      */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain next) throws IOException, ServletException {

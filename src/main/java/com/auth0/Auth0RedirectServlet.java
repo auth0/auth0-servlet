@@ -9,12 +9,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static com.auth0.ServletUtils.isFlagEnabled;
-import static com.auth0.ServletUtils.readRequiredParameter;
+import static com.auth0.ServletUtils.*;
 
 /**
  * The Servlet endpoint used as the callback handler in the OAuth 2.0 authorization code grant flow.
- * This servlet will be called from Auth0 with the authorization code after a successful login.
+ * It will be called with the authorization code after a successful login.
  */
 public class Auth0RedirectServlet extends HttpServlet implements TokensCallback {
 
@@ -23,6 +22,7 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
     private String redirectOnFail;
     private boolean allowPost;
 
+    //Visible for testing
     @SuppressWarnings("WeakerAccess")
     Auth0RedirectServlet(AuthRequestProcessor authRequestProcessor) {
         this.authRequestProcessor = authRequestProcessor;
@@ -33,21 +33,33 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
     }
 
     /**
-     * Initialize this servlet with required configuration
+     * Initialize this servlet with required configuration.
+     * <p>
+     * Parameters needed on the Local Servlet scope:
+     * <ul>
+     * <li>'com.auth0.redirect_on_success': where to redirect after a successful authentication.</li>
+     * <li>'com.auth0.redirect_on_error': where to redirect after a failed authentication.</li>
+     * </ul>
+     * Parameters needed on the Local/Global Servlet scope:
+     * <ul>
+     * <li>'com.auth0.domain': the Auth0 domain.</li>
+     * <li>'com.auth0.client_id': the Auth0 Client id.</li>
+     * <li>'com.auth0.client_secret': the Auth0 Client secret.</li>
+     * </ul>
      */
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        redirectOnSuccess = readRequiredParameter("com.auth0.redirect_on_success", config);
-        redirectOnFail = readRequiredParameter("com.auth0.redirect_on_error", config);
+        redirectOnSuccess = readLocalRequiredParameter("com.auth0.redirect_on_success", config);
+        redirectOnFail = readLocalRequiredParameter("com.auth0.redirect_on_error", config);
         allowPost = isFlagEnabled("com.auth0.allow_post", config);
         if (authRequestProcessor != null) {
             return;
         }
 
+        String domain = readRequiredParameter("com.auth0.domain", config);
         String clientId = readRequiredParameter("com.auth0.client_id", config);
         String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
-        String domain = readRequiredParameter("com.auth0.domain", config);
         APIClientHelper clientHelper = new APIClientHelper(new AuthAPI(domain, clientId, clientSecret));
         authRequestProcessor = new AuthRequestProcessor(clientHelper, this);
     }
@@ -64,9 +76,9 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
     }
 
     /**
-     * Auth0 server will call the redirect_uri with the tokens using the GET method.
+     * Process a call to the redirect_uri with a GET HTTP method.
      *
-     * @param req the received request with the tokens in the parameters.
+     * @param req the received request with the tokens (implicit grant) or the authorization code (code grant) in the parameters.
      * @param res the response to send back to the server.
      * @throws IOException
      * @throws ServletException
@@ -76,10 +88,12 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
         authRequestProcessor.process(req, res);
     }
 
+
     /**
-     * Auth0 server will call the redirect_uri with the tokens using the POST method when the authorize_url included the 'response_mode=form_post' value.
+     * Process a call to the redirect_uri with a POST HTTP method. This occurs if the authorize_url included the 'response_mode=form_post' value.
+     * This is disabled by default. On the Local Servlet scope you can specify the 'com.auth0.allow_post' parameter to enable this behaviour.
      *
-     * @param req the received request with the tokens in the parameters.
+     * @param req the received request with the tokens (implicit grant) or the authorization code (code grant) in the parameters.
      * @param res the response to send back to the server.
      * @throws IOException
      * @throws ServletException
