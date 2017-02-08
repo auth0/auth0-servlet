@@ -1,0 +1,13 @@
+language: java
+jdk:
+  - openjdk7
+  - oraclejdk7
+  - oraclejdk8
+sudo: false
+script:
+  - "mvn test -B"
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+branches:
+  only:
+  - v4
