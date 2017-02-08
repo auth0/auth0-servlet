@@ -1,4 +1,7 @@
 
+[![Build Status](https://travis-ci.org/auth0/auth0-servlet.svg?branch=v4)](https://travis-ci.org/auth0/auth0-servlet)
+[![codecov](https://codecov.io/gh/auth0/auth0-servlet/branch/v4/graph/badge.svg)](https://codecov.io/gh/auth0/auth0-servlet)
+
 # Auth0 Servlet
 
 A simple (plain) Java library that allows you to use Auth0 with Java for server-side MVC web apps. Aims not to introduce specific frameworks or libraries such as Spring.
