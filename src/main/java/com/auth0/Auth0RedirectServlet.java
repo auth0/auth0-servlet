@@ -1,7 +1,6 @@
 package com.auth0;
 
 import com.auth0.client.auth.AuthAPI;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -9,6 +8,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+
+import static com.auth0.ServletUtils.readConfigParameter;
 
 /**
  * The Servlet endpoint used as the callback handler in the OAuth 2.0 authorization code grant flow.
@@ -35,15 +36,15 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        redirectOnSuccess = readParameter("com.auth0.redirect_on_success", config);
-        redirectOnFail = readParameter("com.auth0.redirect_on_error", config);
+        redirectOnSuccess = readConfigParameter("com.auth0.redirect_on_success", config);
+        redirectOnFail = readConfigParameter("com.auth0.redirect_on_error", config);
         if (authRequestProcessor != null) {
             return;
         }
 
-        String clientId = readParameter("com.auth0.client_id", config);
-        String clientSecret = readParameter("com.auth0.client_secret", config);
-        String domain = readParameter("com.auth0.domain", config);
+        String clientId = readConfigParameter("com.auth0.client_id", config);
+        String clientSecret = readConfigParameter("com.auth0.client_secret", config);
+        String domain = readConfigParameter("com.auth0.domain", config);
         APIClientHelper clientHelper = new APIClientHelper(new AuthAPI(domain, clientId, clientSecret));
         authRequestProcessor = new AuthRequestProcessor(clientHelper, this);
     }
@@ -94,25 +95,6 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
     @Override
     public void onFailure(HttpServletRequest req, HttpServletResponse res, Throwable e) throws IOException {
         res.sendRedirect(req.getContextPath() + redirectOnFail);
-    }
-
-    /**
-     * Attempts to get a property from the servlet context
-     *
-     * @param parameter the parameter name to lookup
-     * @param config    the servlet config to search
-     * @return the parameter value
-     */
-    private static String readParameter(String parameter, ServletConfig config) {
-        String initParam = config.getInitParameter(parameter);
-        if (StringUtils.isNotEmpty(initParam)) {
-            return initParam;
-        }
-        String servletContextInitParam = config.getServletContext().getInitParameter(parameter);
-        if (StringUtils.isNotEmpty(servletContextInitParam)) {
-            return servletContextInitParam;
-        }
-        throw new IllegalArgumentException(parameter + " needs to be defined");
     }
 
 }
