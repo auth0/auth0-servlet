@@ -39,6 +39,7 @@ public class APIClientHelperTest {
         helper.fetchUserId(null);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldFetchUserId() throws Exception {
         UserInfo info = mock(UserInfo.class);
