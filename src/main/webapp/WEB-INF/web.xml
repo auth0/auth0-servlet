@@ -22,6 +22,10 @@
             <param-name>com.auth0.redirect_on_error</param-name>
             <param-value>/login</param-value>
         </init-param>
+        <init-param>
+            <param-name>com.auth0.allow_post</param-name>
+            <param-value>true</param-value>
+        </init-param>
     </servlet>
     <servlet>
         <servlet-name>Login</servlet-name>

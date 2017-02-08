@@ -9,7 +9,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static com.auth0.ServletUtils.readConfigParameter;
+import static com.auth0.ServletUtils.isFlagEnabled;
+import static com.auth0.ServletUtils.readRequiredParameter;
 
 /**
  * The Servlet endpoint used as the callback handler in the OAuth 2.0 authorization code grant flow.
@@ -20,6 +21,7 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
     private AuthRequestProcessor authRequestProcessor;
     private String redirectOnSuccess;
     private String redirectOnFail;
+    private boolean allowPost;
 
     @SuppressWarnings("WeakerAccess")
     Auth0RedirectServlet(AuthRequestProcessor authRequestProcessor) {
@@ -36,15 +38,16 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        redirectOnSuccess = readConfigParameter("com.auth0.redirect_on_success", config);
-        redirectOnFail = readConfigParameter("com.auth0.redirect_on_error", config);
+        redirectOnSuccess = readRequiredParameter("com.auth0.redirect_on_success", config);
+        redirectOnFail = readRequiredParameter("com.auth0.redirect_on_error", config);
+        allowPost = isFlagEnabled("com.auth0.allow_post", config);
         if (authRequestProcessor != null) {
             return;
         }
 
-        String clientId = readConfigParameter("com.auth0.client_id", config);
-        String clientSecret = readConfigParameter("com.auth0.client_secret", config);
-        String domain = readConfigParameter("com.auth0.domain", config);
+        String clientId = readRequiredParameter("com.auth0.client_id", config);
+        String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
+        String domain = readRequiredParameter("com.auth0.domain", config);
         APIClientHelper clientHelper = new APIClientHelper(new AuthAPI(domain, clientId, clientSecret));
         authRequestProcessor = new AuthRequestProcessor(clientHelper, this);
     }
@@ -83,8 +86,11 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      */
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        //Check if POST is enabled
-        authRequestProcessor.process(req, res);
+        if (allowPost) {
+            authRequestProcessor.process(req, res);
+        } else {
+            res.sendError(405);
+        }
     }
 
     @Override
