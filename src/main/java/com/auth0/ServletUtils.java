@@ -1,9 +1,12 @@
 package com.auth0;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.ServletConfig;
+import java.security.SecureRandom;
 
+@SuppressWarnings("WeakerAccess")
 public abstract class ServletUtils {
 
     /**
@@ -28,5 +31,18 @@ public abstract class ServletUtils {
     static boolean isFlagEnabled(String key, ServletConfig config) {
         String textFlag = config.getInitParameter(key);
         return textFlag != null && textFlag.equals("true");
+    }
+
+    /**
+     * Generates a new random string using {@link SecureRandom}.
+     * The output can be used as state or nonce for API requests.
+     *
+     * @return a new random string.
+     */
+    public static String secureRandomString() {
+        final SecureRandom sr = new SecureRandom();
+        final byte[] randomBytes = new byte[32];
+        sr.nextBytes(randomBytes);
+        return Base64.encodeBase64URLSafeString(randomBytes);
     }
 }

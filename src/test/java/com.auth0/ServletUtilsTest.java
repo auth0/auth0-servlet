@@ -9,6 +9,7 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -64,6 +65,12 @@ public class ServletUtilsTest {
 
         boolean enabled = ServletUtils.isFlagEnabled("key", config);
         Assert.assertThat(enabled, is(false));
+    }
+
+    @Test
+    public void shouldGetRandomString() throws Exception {
+        String string = ServletUtils.secureRandomString();
+        Assert.assertThat(string, is(notNullValue()));
     }
 
 
