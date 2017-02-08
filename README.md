@@ -104,14 +104,18 @@ You need to add the library classes to the deployment descriptor file located in
     ```
 
 #### Allowed Settings
-The list of required parameters for the servlet to init is:
+The list of required parameters for the servlet to initiate is:
  
-* `com.auth0.redirect_on_success`: Defines the path to call after a successful redirection, when the user was just authenticated.
-* `com.auth0.redirect_on_error`: Defines the path to call after an error occurred while parsing the redirection data.
-* `com.auth0.redirect_on_authentication_error`: Defines the path to call when the user tries to access a protected endpoint without logging in first.
-* `com.auth0.domain`: Auth0 Domain.
-* `com.auth0.client_id`: Auth0 Client ID.
-* `com.auth0.client_secret`: Auth0 Client Secret.
+**Required:**
+* `com.auth0.redirect_on_success`: Defines the path to call after a successful redirection, when the user was just authenticated. Must be defined in the **local Servlet scope**.
+* `com.auth0.redirect_on_error`: Defines the path to call after an error occurred while parsing the redirection data. Must be defined in the **local Servlet scope**.
+* `com.auth0.redirect_on_authentication_error`: Defines the path to call when the user tries to access a protected endpoint without logging in first. Must be defined in the **local Filter scope**.
+* `com.auth0.domain`: Auth0 Domain. Can be defined either in the local or the global Servlet context.
+* `com.auth0.client_id`: Auth0 Client ID. Can be defined either in the local or the global Servlet context.
+* `com.auth0.client_secret`: Auth0 Client Secret. Can be defined either in the local or the global Servlet context.
+
+**Optional:**
+* `com.auth0.allow_post`: Whether requests with POST method are accepted or not. The value must be `true` to be considered enabled. 
 
 
 ## Usage
@@ -123,8 +127,8 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doGet(final HttpServletRequest req, final HttpServletResponse res) throws ServletException, IOException {
         AuthAPI authAPI = new AuthAPI("clientDomain", "clientId", "clientSecret");
-        String state = generateRandomState();
-        SessionUtils.setState(req, state); //Save the state for later verification
+        String state = ServletUtils.secureRandomString();
+        ServletUtils.setSessionState(req, state); //Save the state for later verification
         String redirectUri = "https://mysite.com/callback";
         String authorizeUrl = authAPI
                 .authorizeUrl(redirectUri)
@@ -135,11 +139,12 @@ public class LoginServlet extends HttpServlet {
 }
 ```
 
-Note that a random state is set in the request and saved in the session, so that later when the redirect uri is hit we can validate it.
+Note in the example above that a random state is set in the request and saved in the session, so that later when the redirect uri is hit we can validate it. Sending the `state` parameter is recommended to avoid CRF attacks.
 
-After the user logs in successfully, the server will call the redirect uri with the `auth_token`, `id_token` and depending on the requested **response_type**, an authorization `code` to exchange. The `Auth0RedirectServlet` servlet will check for errors and a valid incoming state. Next, it will try to parse the tokens from the request parameters and if a `code` needs to be exchanged, it will handle the exchange. Finally, it will call the Authentication API [/userInfo](https://auth0.com/docs/api/authentication#get-user-info) endpoint to obtain the user information associated to that access_token. If this call is successful, the **User Id** will be stored in the request session and the user will be considered authenticated. The User Id can be obtained by calling `SessionUtils.getAuth0UserId(req)`. The servlet finally calls a protected method `onAuth0TokensObtained` passing the **Tokens** obtained in the login. The token values are **not saved** by the Servlet, if you want to keep them you'll need to handle the persistence yourself.
+After the user logs in successfully, the server will call the redirect uri with the `access_token`, `id_token` and depending on the requested **response_type**, an authorization `code` to exchange. The `Auth0RedirectServlet` servlet will check for errors and a valid incoming state. Next, it will try to parse the tokens from the request parameters and if a `code` needs to be exchanged, it will handle the exchange. Finally, it will call the Authentication API [/userInfo](https://auth0.com/docs/api/authentication#get-user-info) endpoint to obtain the user information associated to that access_token. If this call is successful, the **User Id** will be stored in the request session and the user will be considered authenticated. The User Id can be obtained by calling `ServletUtils.getSessionUserId(req)`. The servlet finally calls the `onSuccess` method passing the **Tokens** obtained in the login. The token values are **not saved** by the Servlet, if you want to keep them you'll need to handle the persistence yourself.
 
-This servlet supports `GET` and `POST` calls to the redirect uri. A `POST` can be requested in the authorize url by adding the `response_mode=form_post` parameter to the query.
+This servlet supports `GET` and `POST` calls to the redirect uri. A `POST` can be requested in the authorize url by adding the `response_mode=form_post` parameter to the query. Check the [Allowed Settings](#allowed-settings) section to learn how to enable it.
+
 
 ### Tokens class
 The `Tokens` class holds the tokens obtained after a successful login. Note that not all of them are guaranteed to be available, as this depends on the **scope** requested on the `/authorize` call. The available methods are:
@@ -148,6 +153,7 @@ The `Tokens` class holds the tokens obtained after a successful login. Note that
 * `getRefreshToken()`
 * `getType()`
 * `getExpiresIn()`
+
 
 ## Issue Reporting
 

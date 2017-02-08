@@ -7,6 +7,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+/**
+ * Main class to handle the Authorize Redirect request.
+ * It will try to parse the parameters looking for tokens or an authorization code to perform a Code Exchange against the Auth0 servers.
+ * When the tokens are obtained, it will request the user id associated to them and save it in the {@link javax.servlet.http.HttpSession}.
+ */
 class AuthRequestProcessor {
 
     private final APIClientHelper clientHelper;
@@ -28,12 +33,12 @@ class AuthRequestProcessor {
      * 4). Storing both tokens and user information into session storage.
      * 5). Clearing the stored state value.
      * 6). Handling success and any failure outcomes.
+     *
      * @throws Auth0Exception
      * @throws IOException
      */
     public void process(HttpServletRequest req, HttpServletResponse res) throws IOException {
         boolean validRequest = isValidRequest(req);
-        SessionUtils.removeState(req);
         if (!validRequest) {
             callback.onFailure(req, res, new IllegalStateException("Invalid state or error"));
             return;
@@ -53,15 +58,60 @@ class AuthRequestProcessor {
             return;
         }
 
-        SessionUtils.setAuth0UserId(req, userId);
+        ServletUtils.setSessionUserId(req, userId);
         callback.onSuccess(req, res, tokens);
     }
 
-    private Tokens tokensFromRequest(HttpServletRequest req) throws Auth0Exception {
+    /**
+     * Extract the tokens from the request parameters, present when using the Implicit Grant.
+     *
+     * @param req the request
+     * @return a new instance of Tokens wrapping the values present in the request parameters.
+     */
+    private Tokens tokensFromRequest(HttpServletRequest req) {
         Long expiresIn = req.getParameter("expires_in") == null ? null : Long.parseLong(req.getParameter("expires_in"));
         return new Tokens(req.getParameter("access_token"), req.getParameter("id_token"), req.getParameter("refresh_token"), req.getParameter("token_type"), expiresIn);
     }
 
+    /**
+     * Indicates whether the request is deemed valid
+     *
+     * @param req the request
+     * @return whether this request is deemed valid or not.
+     */
+    private boolean isValidRequest(HttpServletRequest req) {
+        return !hasError(req) && hasValidState(req);
+    }
+
+    /**
+     * Checks for the presence of an error in the request parameters
+     *
+     * @param req the request
+     * @return whether an error was present or not.
+     */
+    private boolean hasError(HttpServletRequest req) {
+        return req.getParameter("error") != null;
+    }
+
+    /**
+     * Indicates whether the state persisted in the session matches the state value received in the request parameters.
+     *
+     * @param req the request
+     * @return whether state matches or not.
+     */
+    private boolean hasValidState(HttpServletRequest req) {
+        String stateFromRequest = req.getParameter("state");
+        return ServletUtils.checkSessionState(req, stateFromRequest);
+    }
+
+    /**
+     * Calls the {@link APIClientHelper#exchangeCodeForTokens(String, String)} to request a Code Exchange.
+     *
+     * @param authorizationCode the authorization code received in the login request.
+     * @param redirectUri       the redirect uri sent on the login.
+     * @return a new instance of Tokens wrapping the values present in the response.
+     * @throws Auth0Exception if the call to the Auth0 API failed.
+     */
     private Tokens exchangeCodeForTokens(String authorizationCode, String redirectUri) throws Auth0Exception {
         Validate.notNull(authorizationCode);
         Validate.notNull(redirectUri);
@@ -70,38 +120,12 @@ class AuthRequestProcessor {
     }
 
     /**
-     * Indicates whether the request is deemed valid
+     * Calls the {@link APIClientHelper#fetchUserId(String)} to request the User Id of a given token.
      *
-     * @param req the http servlet request
-     * @return boolean whether this request is deemed valid
+     * @param tokens the tokens to get the user id from.
+     * @return the user id
+     * @throws Auth0Exception if the call to the Auth0 API failed.
      */
-    private boolean isValidRequest(HttpServletRequest req) {
-        return !hasError(req) && hasValidState(req);
-    }
-
-    /**
-     * Checks for the presence of an error in the http servlet request params
-     *
-     * @param req the http servlet request
-     * @return boolean whether this http servlet request indicates an error was present
-     */
-    private boolean hasError(HttpServletRequest req) {
-        return req.getParameter("error") != null;
-    }
-
-    /**
-     * Indicates whether the state value in storage matches the state value passed
-     * with the http servlet request
-     *
-     * @param req the http servlet request
-     * @return boolean whether state value in storage matches the state value in the http request
-     */
-    private boolean hasValidState(HttpServletRequest req) {
-        String stateFromRequest = req.getParameter("state");
-        String stateFromStorage = SessionUtils.getState(req);
-        return stateFromRequest != null && stateFromRequest.equals(stateFromStorage);
-    }
-
     private String fetchUserId(Tokens tokens) throws Auth0Exception {
         Validate.notNull(tokens.getAccessToken());
 
@@ -109,10 +133,10 @@ class AuthRequestProcessor {
     }
 
     /**
-     * Used to keep the best version of each token included in Tokens.
+     * Used to keep the best version of each token. If present, latest tokens will always be better than the first ones.
      *
      * @param tokens       the first obtained tokens.
-     * @param latestTokens the latest obtained tokens, usually better than the first.
+     * @param latestTokens the latest obtained tokens, preferred over the first ones.
      * @return a merged version of Tokens using the latest tokens when possible.
      */
     private Tokens mergeTokens(Tokens tokens, Tokens latestTokens) {

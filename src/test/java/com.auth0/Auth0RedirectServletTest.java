@@ -106,18 +106,32 @@ public class Auth0RedirectServletTest {
 
     @Test
     public void shouldProcessRequestOnGET() throws Exception {
-        HttpServletRequest req = mock(HttpServletRequest.class);
+        HttpServletRequest req = new MockHttpServletRequest();
         servlet.doGet(req, res);
 
         verify(authRequestProcessor).process(req, res);
     }
 
     @Test
-    public void shouldProcessRequestOnPOST() throws Exception {
-        HttpServletRequest req = mock(HttpServletRequest.class);
+    public void shouldProcessRequestOnPOSTIfEnabled() throws Exception {
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet(authRequestProcessor);
+        ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "domain", "/secure/home", "/login");
+        when(config.getInitParameter("com.auth0.allow_post")).thenReturn("true");
+        HttpServletRequest req = new MockHttpServletRequest();
+        servlet.init(config);
         servlet.doPost(req, res);
 
         verify(authRequestProcessor).process(req, res);
+        verify(res, never()).sendError(anyInt());
+    }
+
+    @Test
+    public void shouldRedirectOnPOSTIfDisabled() throws Exception {
+        HttpServletRequest req = new MockHttpServletRequest();
+        servlet.doPost(req, res);
+
+        verify(authRequestProcessor, never()).process(req, res);
+        verify(res).sendError(405);
     }
 
     @Test

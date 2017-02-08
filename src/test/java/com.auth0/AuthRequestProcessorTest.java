@@ -78,7 +78,7 @@ public class AuthRequestProcessorTest {
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
         HttpServletRequest req = getRequest(params);
-        SessionUtils.setState(req, "9999");
+        ServletUtils.setSessionState(req, "9999");
 
         handler.process(req, res);
 
@@ -96,7 +96,7 @@ public class AuthRequestProcessorTest {
         params.put("id_token", "theIdToken");
         params.put("refresh_token", "theRefreshToken");
         HttpServletRequest req = getRequest(params);
-        SessionUtils.setState(req, "1234");
+        ServletUtils.setSessionState(req, "1234");
 
         handler.process(req, res);
         verify(clientHelper).fetchUserId("theAccessToken");
@@ -108,7 +108,7 @@ public class AuthRequestProcessorTest {
         params.put("state", "1234");
         params.put("access_token", "theAccessToken");
         HttpServletRequest req = getRequest(params);
-        SessionUtils.setState(req, "1234");
+        ServletUtils.setSessionState(req, "1234");
 
         when(clientHelper.fetchUserId("theAccessToken")).thenReturn(null);
 
@@ -130,14 +130,14 @@ public class AuthRequestProcessorTest {
         params.put("token_type", "theType");
         params.put("expires_in", "360000");
         HttpServletRequest req = getRequest(params);
-        SessionUtils.setState(req, "1234");
+        ServletUtils.setSessionState(req, "1234");
 
         when(clientHelper.fetchUserId("theAccessToken")).thenReturn("auth0|user123");
 
         handler.process(req, res);
 
         verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
-        assertThat(SessionUtils.getAuth0UserId(req), is("auth0|user123"));
+        assertThat(ServletUtils.getSessionUserId(req), is("auth0|user123"));
         assertThat(tokenCaptor.getValue().getAccessToken(), is("theAccessToken"));
         assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
         assertThat(tokenCaptor.getValue().getRefreshToken(), is("theRefreshToken"));
@@ -156,7 +156,7 @@ public class AuthRequestProcessorTest {
         params.put("token_type", "theType");
         params.put("expires_in", "360000");
         HttpServletRequest req = getRequest(params);
-        SessionUtils.setState(req, "1234");
+        ServletUtils.setSessionState(req, "1234");
 
         Tokens codeTokens = mock(Tokens.class);
         when(codeTokens.getAccessToken()).thenReturn("betterAccessToken");
@@ -170,7 +170,7 @@ public class AuthRequestProcessorTest {
         handler.process(req, res);
 
         verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
-        assertThat(SessionUtils.getAuth0UserId(req), is("auth0|user123"));
+        assertThat(ServletUtils.getSessionUserId(req), is("auth0|user123"));
         assertThat(tokenCaptor.getValue().getAccessToken(), is("betterAccessToken"));
         assertThat(tokenCaptor.getValue().getIdToken(), is("betterIdToken"));
         assertThat(tokenCaptor.getValue().getRefreshToken(), is("betterRefreshToken"));

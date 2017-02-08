@@ -1,7 +1,7 @@
 package com.auth0.example;
 
 
-import com.auth0.SessionUtils;
+import com.auth0.ServletUtils;
 import com.auth0.client.auth.AuthAPI;
 
 import javax.servlet.ServletException;
@@ -21,7 +21,7 @@ public class LoginServlet extends HttpServlet {
         String clientSecret = getServletContext().getInitParameter("com.auth0.client_secret");
 
         String state = createState();
-        SessionUtils.setState(req, state);
+        ServletUtils.setSessionState(req, state);
 
         AuthAPI authAPIClient = new AuthAPI(clientDomain, clientId, clientSecret);
         String redirectUri = req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort() + callbackPath;
