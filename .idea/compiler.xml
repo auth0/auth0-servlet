@@ -7,12 +7,12 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="auth0-servlet" />
-        <module name="auth0-servlet-sample" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="auth0-servlet" target="1.7" />
-      <module name="auth0-servlet-sample" target="1.7" />
+      <module name="auth0-servlet_main" target="1.7" />
+      <module name="auth0-servlet_test" target="1.7" />
     </bytecodeTargetLevel>
   </component>
 </project>
