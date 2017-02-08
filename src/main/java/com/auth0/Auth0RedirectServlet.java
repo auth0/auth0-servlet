@@ -46,9 +46,6 @@ public class Auth0RedirectServlet extends HttpServlet {
         String clientId = readParameter("com.auth0.client_id", config);
         String clientSecret = readParameter("com.auth0.client_secret", config);
         String domain = readParameter("com.auth0.domain", config);
-        Validate.notNull(clientId);
-        Validate.notNull(clientSecret);
-        Validate.notNull(domain);
         clientHelper = new APIClientHelper(new AuthAPI(domain, clientId, clientSecret));
     }
 
@@ -56,6 +53,11 @@ public class Auth0RedirectServlet extends HttpServlet {
     public void destroy() {
         super.destroy();
         clientHelper = null;
+    }
+
+    //Visible for testing
+    APIClientHelper getClientHelper() {
+        return clientHelper;
     }
 
     /**

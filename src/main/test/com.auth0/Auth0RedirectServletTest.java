@@ -11,15 +11,14 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -41,35 +40,93 @@ public class Auth0RedirectServletTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         Auth0RedirectServlet servlet = new Auth0RedirectServlet(clientHelper);
-        servlet.init(getValidServletConfig());
+        servlet.init(configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com"));
         this.servlet = spy(servlet);
     }
 
     @Test
-    public void shouldThrowOnMissingClientId() throws Exception {
-        exception.expect(NullPointerException.class);
+    public void shouldThrowOnMissingClientIdConfig() throws Exception {
+        exception.expect(IllegalArgumentException.class);
 
         Auth0RedirectServlet servlet = new Auth0RedirectServlet();
-        ServletConfig config = getAuth0ServletConfig(null, "secret", "domain");
+        ServletConfig config = configureAuth0Servlet(null, "secret", "domain");
         servlet.init(config);
     }
 
     @Test
-    public void shouldThrowOnMissingClientSecret() throws Exception {
-        exception.expect(NullPointerException.class);
+    public void shouldThrowOnMissingClientSecretConfig() throws Exception {
+        exception.expect(IllegalArgumentException.class);
 
         Auth0RedirectServlet servlet = new Auth0RedirectServlet();
-        ServletConfig config = getAuth0ServletConfig("id", null, "domain");
+        ServletConfig config = configureAuth0Servlet("id", null, "domain");
         servlet.init(config);
     }
 
     @Test
-    public void shouldThrowOnMissingDomain() throws Exception {
-        exception.expect(NullPointerException.class);
+    public void shouldThrowOnMissingDomainConfig() throws Exception {
+        exception.expect(IllegalArgumentException.class);
 
         Auth0RedirectServlet servlet = new Auth0RedirectServlet();
-        ServletConfig config = getAuth0ServletConfig("id", "secret", null);
+        ServletConfig config = configureAuth0Servlet("id", "secret", null);
         servlet.init(config);
+    }
+
+    @Test
+    public void shouldThrowOnMissingClientIdContext() throws Exception {
+        exception.expect(IllegalArgumentException.class);
+
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet();
+        ServletConfig config = configureAuth0ServletContext(null, "secret", "domain");
+        servlet.init(config);
+    }
+
+    @Test
+    public void shouldThrowOnMissingClientSecretContext() throws Exception {
+        exception.expect(IllegalArgumentException.class);
+
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet();
+        ServletConfig config = configureAuth0ServletContext("id", null, "domain");
+        servlet.init(config);
+    }
+
+    @Test
+    public void shouldThrowOnMissingDomainContext() throws Exception {
+        exception.expect(IllegalArgumentException.class);
+
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet();
+        ServletConfig config = configureAuth0ServletContext("id", "secret", null);
+        servlet.init(config);
+    }
+
+    @Test
+    public void shouldCreateServletFromAuth0Config() throws Exception {
+        ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "domain");
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet();
+        servlet.init(config);
+    }
+
+    @Test
+    public void shouldCreateServletFromAuth0Context() throws Exception {
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet();
+        ServletConfig config = configureAuth0ServletContext("clientId", "clientSecret", "domain");
+        servlet.init(config);
+    }
+
+    @Test
+    public void shouldCreateClientHelper() throws Exception {
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet();
+        ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "domain");
+        servlet.init(config);
+        assertThat(servlet.getClientHelper(), is(notNullValue()));
+    }
+
+    @Test
+    public void shouldDestroyClientHelper() throws Exception {
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet();
+        ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "domain");
+        servlet.init(config);
+        servlet.destroy();
+        assertThat(servlet.getClientHelper(), is(nullValue()));
     }
 
     @Test
@@ -221,19 +278,28 @@ public class Auth0RedirectServletTest {
         return request;
     }
 
-    private ServletConfig getValidServletConfig() {
-        ServletConfig config = getAuth0ServletConfig("MyClientId", "MyClientSecret", "me.auth0.com");
+    private ServletConfig configureAuth0Servlet(String clientId, String clientSecret, String domain) {
+        ServletConfig config = mock(ServletConfig.class);
         when(config.getInitParameter("com.auth0.redirect_on_success")).thenReturn("/secure/home");
         when(config.getInitParameter("com.auth0.redirect_on_error")).thenReturn("/login");
-        return config;
-    }
-
-    private ServletConfig getAuth0ServletConfig(String clientId, String clientSecret, String domain) {
-        ServletConfig config = mock(ServletConfig.class);
         when(config.getInitParameter("com.auth0.client_id")).thenReturn(clientId);
         when(config.getInitParameter("com.auth0.client_secret")).thenReturn(clientSecret);
         when(config.getInitParameter("com.auth0.domain")).thenReturn(domain);
+
+        ServletContext context = mock(ServletContext.class);
+        when(config.getServletContext()).thenReturn(context);
         return config;
     }
 
+    private ServletConfig configureAuth0ServletContext(String clientId, String clientSecret, String domain) {
+        ServletContext context = mock(ServletContext.class);
+        ServletConfig config = mock(ServletConfig.class);
+        when(config.getServletContext()).thenReturn(context);
+        when(config.getInitParameter("com.auth0.redirect_on_success")).thenReturn("/secure/home");
+        when(config.getInitParameter("com.auth0.redirect_on_error")).thenReturn("/login");
+        when(context.getInitParameter("com.auth0.client_id")).thenReturn(clientId);
+        when(context.getInitParameter("com.auth0.client_secret")).thenReturn(clientSecret);
+        when(context.getInitParameter("com.auth0.domain")).thenReturn(domain);
+        return config;
+    }
 }
