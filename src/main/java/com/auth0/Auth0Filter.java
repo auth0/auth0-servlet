@@ -47,7 +47,7 @@ public class Auth0Filter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain next) throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
-        String userId = SessionUtils.getAuth0UserId(req);
+        String userId = ServletUtils.getSessionUserId(req);
         if (userId == null) {
             onReject(res);
             return;

@@ -88,7 +88,7 @@ public class Auth0FilterTest {
     private HttpServletRequest getAuthRequest(boolean isUserAuthenticated) {
         HttpServletRequest req = mock(HttpServletRequest.class);
         HttpSession session = mock(HttpSession.class);
-        when(session.getAttribute("auth0UserId")).thenReturn(isUserAuthenticated ? "accessToken" : null);
+        when(session.getAttribute("com.auth0.userId")).thenReturn(isUserAuthenticated ? "theUserId" : null);
         when(req.getSession()).thenReturn(session);
         when(req.getSession(anyBoolean())).thenReturn(session);
         return req;

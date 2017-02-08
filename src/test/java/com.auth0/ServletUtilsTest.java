@@ -4,12 +4,13 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,7 +39,6 @@ public class ServletUtilsTest {
         String val = ServletUtils.readRequiredParameter("key", config);
         Assert.assertThat(val, is("context"));
     }
-
 
     @Test
     public void shouldGetEnabledFlagValue() throws Exception {
@@ -71,6 +71,64 @@ public class ServletUtilsTest {
     public void shouldGetRandomString() throws Exception {
         String string = ServletUtils.secureRandomString();
         Assert.assertThat(string, is(notNullValue()));
+    }
+
+    @Test
+    public void shouldGetUserId() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.getSession().setAttribute("com.auth0.userId", "theUserId");
+
+        assertThat(ServletUtils.getSessionUserId(req), is("theUserId"));
+    }
+
+    @Test
+    public void shouldGetNullUserIdIfMissing() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+
+        assertThat(ServletUtils.getSessionUserId(req), is(nullValue()));
+    }
+
+    @Test
+    public void shouldSetUserId() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+
+        ServletUtils.setSessionUserId(req, "newUserId");
+        assertThat((String) req.getSession().getAttribute("com.auth0.userId"), is("newUserId"));
+    }
+
+    @Test
+    public void shouldSetState() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+
+        ServletUtils.setSessionState(req, "123456");
+        assertThat((String) req.getSession().getAttribute("com.auth0.state"), is("123456"));
+    }
+
+    @Test
+    public void shouldAcceptBothNullStates() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        boolean validState = ServletUtils.checkSessionState(req, null);
+        assertThat(validState, is(true));
+    }
+
+    @Test
+    public void shouldCheckAndRemoveInvalidState() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.getSession().setAttribute("com.auth0.state", "123456");
+
+        boolean validState = ServletUtils.checkSessionState(req, "abcdef");
+        assertThat(validState, is(false));
+        assertThat(req.getSession().getAttribute("com.auth0.state"), is(nullValue()));
+    }
+
+    @Test
+    public void shouldCheckAndRemoveCorrectState() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.getSession().setAttribute("com.auth0.state", "123456");
+
+        boolean validState = ServletUtils.checkSessionState(req, "123456");
+        assertThat(validState, is(true));
+        assertThat(req.getSession().getAttribute("com.auth0.state"), is(nullValue()));
     }
 
 

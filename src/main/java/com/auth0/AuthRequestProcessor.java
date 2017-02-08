@@ -28,12 +28,12 @@ class AuthRequestProcessor {
      * 4). Storing both tokens and user information into session storage.
      * 5). Clearing the stored state value.
      * 6). Handling success and any failure outcomes.
+     *
      * @throws Auth0Exception
      * @throws IOException
      */
     public void process(HttpServletRequest req, HttpServletResponse res) throws IOException {
         boolean validRequest = isValidRequest(req);
-        SessionUtils.removeState(req);
         if (!validRequest) {
             callback.onFailure(req, res, new IllegalStateException("Invalid state or error"));
             return;
@@ -53,7 +53,7 @@ class AuthRequestProcessor {
             return;
         }
 
-        SessionUtils.setAuth0UserId(req, userId);
+        ServletUtils.setSessionUserId(req, userId);
         callback.onSuccess(req, res, tokens);
     }
 
@@ -98,8 +98,7 @@ class AuthRequestProcessor {
      */
     private boolean hasValidState(HttpServletRequest req) {
         String stateFromRequest = req.getParameter("state");
-        String stateFromStorage = SessionUtils.getState(req);
-        return stateFromRequest != null && stateFromRequest.equals(stateFromStorage);
+        return ServletUtils.checkSessionState(req, stateFromRequest);
     }
 
     private String fetchUserId(Tokens tokens) throws Auth0Exception {

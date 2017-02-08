@@ -1,6 +1,6 @@
 package com.auth0.example;
 
-import com.auth0.SessionUtils;
+import com.auth0.ServletUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -12,7 +12,7 @@ public class HomeServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        final String userId = SessionUtils.getAuth0UserId(req);
+        final String userId = ServletUtils.getSessionUserId(req);
         if (userId != null) {
             req.setAttribute("userId", userId);
         }
