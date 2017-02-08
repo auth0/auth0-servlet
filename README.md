@@ -115,8 +115,15 @@ The list of required parameters for the servlet to initiate is:
 * `com.auth0.client_secret`: Auth0 Client Secret. Can be defined either in the local or the global Servlet context.
 
 **Optional:**
-* `com.auth0.allow_post`: Whether requests with POST method are accepted or not. The value must be `true` to be considered enabled. 
+* `com.auth0.allow_post`: Whether requests with POST method are accepted or not. The value must be `true` to be considered enabled. Must be defined in the **local Servlet scope**.
+* `com.auth0.use_implicit_grant`: Whether requests without an authorization code should be allowed or not. The value must be `true` to be considered enabled. Must be defined in the **local Servlet scope**.
+* `com.auth0.certificate`: Whether requests with POST method are accepted or not. The value must be `true` to be considered enabled. Must be defined in the **local Servlet scope**.
 
+
+#### Implicit Grant
+**Code Grant is the default, safest and recommended method.** You can still use Implicit Grant if you enable it explicitly using the flag `com.auth0.use_implicit_grant`. If the value `com.auth0.certificate` is also present, the token validation will be performed using the **RS256** algorithm and the given RSA certificate. In case the certificate is not defined, the token validation will be performed using the **HS256** algorithm and the client secret.
+
+If the Implicit Grant is disabled (default behaviour) and the authorization code is missing from the request parameters, an exception will raise.
 
 ## Usage
 

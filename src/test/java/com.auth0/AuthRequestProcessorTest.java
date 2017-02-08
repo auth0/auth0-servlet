@@ -38,24 +38,24 @@ public class AuthRequestProcessorTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        handler = new AuthRequestProcessor(clientHelper, callback);
+        handler = new AuthRequestProcessor(clientHelper, null, callback);
     }
 
     @Test
     public void shouldThrowOnMissingAPIClientHelper() throws Exception {
         exception.expect(NullPointerException.class);
-        new AuthRequestProcessor(null, callback);
+        new AuthRequestProcessor(null, null, callback);
+    }
+
+    @Test
+    public void shouldNotThrowOnMissingTokenVerifier() throws Exception {
+        new AuthRequestProcessor(clientHelper, null, callback);
     }
 
     @Test
     public void shouldThrowOnMissingCallback() throws Exception {
         exception.expect(NullPointerException.class);
-        new AuthRequestProcessor(clientHelper, null);
-    }
-
-    @Test
-    public void shouldCreateInstance() throws Exception {
-        new AuthRequestProcessor(clientHelper, callback);
+        new AuthRequestProcessor(clientHelper, null, null);
     }
 
     @Test

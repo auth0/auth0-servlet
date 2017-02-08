@@ -12,15 +12,18 @@ import java.io.IOException;
  * It will try to parse the parameters looking for tokens or an authorization code to perform a Code Exchange against the Auth0 servers.
  * When the tokens are obtained, it will request the user id associated to them and save it in the {@link javax.servlet.http.HttpSession}.
  */
+@SuppressWarnings("WeakerAccess")
 class AuthRequestProcessor {
 
     private final APIClientHelper clientHelper;
     private final TokensCallback callback;
+    private final TokenVerifier verifier;
 
-    public AuthRequestProcessor(APIClientHelper clientHelper, TokensCallback callback) {
+    public AuthRequestProcessor(APIClientHelper clientHelper, TokenVerifier verifier, TokensCallback callback) {
         Validate.notNull(clientHelper);
         Validate.notNull(callback);
         this.clientHelper = clientHelper;
+        this.verifier = verifier;
         this.callback = callback;
     }
 
@@ -46,13 +49,19 @@ class AuthRequestProcessor {
 
         Tokens tokens = tokensFromRequest(req);
         String authorizationCode = req.getParameter("code");
-        if (authorizationCode != null) {
+
+        String userId;
+        if (authorizationCode == null && verifier == null) {
+            throw new IllegalStateException("Implicit Grant not allowed.");
+        } else if (verifier != null) {
+            userId = verifier.getUserId(tokens.getIdToken());
+        } else {
             String redirectUri = req.getRequestURL().toString();
             Tokens latestTokens = exchangeCodeForTokens(authorizationCode, redirectUri);
             tokens = mergeTokens(tokens, latestTokens);
+            userId = fetchUserId(tokens);
         }
 
-        String userId = fetchUserId(tokens);
         if (userId == null) {
             callback.onFailure(req, res, new IllegalStateException("Couldn't obtain the User Id."));
             return;

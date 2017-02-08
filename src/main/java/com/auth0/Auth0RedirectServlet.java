@@ -1,6 +1,7 @@
 package com.auth0;
 
 import com.auth0.client.auth.AuthAPI;
+import org.bouncycastle.util.io.pem.PemReader;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -8,6 +9,15 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.EncodedKeySpec;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 
 import static com.auth0.ServletUtils.*;
 
@@ -61,7 +71,43 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
         String clientId = readRequiredParameter("com.auth0.client_id", config);
         String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
         APIClientHelper clientHelper = new APIClientHelper(new AuthAPI(domain, clientId, clientSecret));
-        authRequestProcessor = new AuthRequestProcessor(clientHelper, this);
+
+        TokenVerifier verifier = null;
+        boolean implicitGrantEnabled = isFlagEnabled("com.auth0.use_implicit_grant", config);
+        if (!implicitGrantEnabled) {
+            String rs256Certificate = config.getInitParameter("com.auth0.certificate");
+            if (rs256Certificate == null) {
+                try {
+                    verifier = new TokenVerifier(clientSecret, clientId, domain);
+                } catch (UnsupportedEncodingException e) {
+                    throw new ServletException("Missing UTF-8 encoding support.", e);
+                }
+            } else {
+                byte[] keyBytes;
+                try {
+                    keyBytes = new PemReader(new StringReader(rs256Certificate)).readPemObject().getContent();
+                    verifier = new TokenVerifier(getPublicKey(keyBytes), clientId, domain);
+                } catch (IOException e) {
+                    throw new ServletException("The PublicKey certificate for RS256 algorithm was invalid.", e);
+                }
+            }
+        }
+        authRequestProcessor = new AuthRequestProcessor(clientHelper, verifier, this);
+    }
+
+    private static RSAPublicKey getPublicKey(byte[] keyBytes) {
+        PublicKey publicKey = null;
+        try {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+            publicKey = kf.generatePublic(keySpec);
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("Could not reconstruct the public key, the given algorithm could not be found.");
+        } catch (InvalidKeySpecException e) {
+            System.out.println("Could not reconstruct the public key");
+        }
+
+        return (RSAPublicKey) publicKey;
     }
 
     @Override
