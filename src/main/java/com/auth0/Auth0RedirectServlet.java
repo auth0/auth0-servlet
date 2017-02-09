@@ -65,26 +65,30 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
         String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
         APIClientHelper clientHelper = new APIClientHelper(new AuthAPI(domain, clientId, clientSecret));
 
-        TokenVerifier verifier = null;
         boolean implicitGrantEnabled = isFlagEnabled("com.auth0.use_implicit_grant", config);
         if (!implicitGrantEnabled) {
-            String rs256Certificate = config.getInitParameter("com.auth0.certificate");
-            if (rs256Certificate == null) {
-                try {
-                    verifier = new TokenVerifier(clientSecret, clientId, domain);
-                } catch (UnsupportedEncodingException e) {
-                    throw new ServletException("Missing UTF-8 encoding support.", e);
-                }
-            } else {
-                byte[] keyBytes;
-                try {
-                    keyBytes = new PemReader(new StringReader(rs256Certificate)).readPemObject().getContent();
-                    verifier = new TokenVerifier(readPublicKey(keyBytes), clientId, domain);
-                } catch (IOException e) {
-                    throw new ServletException("The PublicKey certificate for RS256 algorithm was invalid.", e);
-                }
+            authRequestProcessor = new AuthRequestProcessor(clientHelper, this);
+            return;
+        }
+
+        TokenVerifier verifier;
+        String rs256Certificate = config.getInitParameter("com.auth0.certificate");
+        if (rs256Certificate == null) {
+            try {
+                verifier = new TokenVerifier(clientSecret, clientId, domain);
+            } catch (UnsupportedEncodingException e) {
+                throw new ServletException("Missing UTF-8 encoding support.", e);
+            }
+        } else {
+            byte[] keyBytes;
+            try {
+                keyBytes = new PemReader(new StringReader(rs256Certificate)).readPemObject().getContent();
+                verifier = new TokenVerifier(readPublicKey(keyBytes), clientId, domain);
+            } catch (IOException e) {
+                throw new ServletException("The PublicKey certificate for RS256 algorithm was invalid.", e);
             }
         }
+
         authRequestProcessor = new AuthRequestProcessor(clientHelper, verifier, this);
     }
 
