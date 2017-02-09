@@ -20,19 +20,20 @@ import static com.auth0.ServletUtils.*;
  */
 public class Auth0RedirectServlet extends HttpServlet implements TokensCallback {
 
-    private AuthRequestProcessor authRequestProcessor;
+    private final RequestProcessorFactory processorFactory;
+    private RequestProcessor requestProcessor;
     private String redirectOnSuccess;
     private String redirectOnFail;
     private boolean allowPost;
 
     //Visible for testing
     @SuppressWarnings("WeakerAccess")
-    Auth0RedirectServlet(AuthRequestProcessor authRequestProcessor) {
-        this.authRequestProcessor = authRequestProcessor;
+    Auth0RedirectServlet(RequestProcessorFactory factory) {
+        this.processorFactory = factory;
     }
 
     public Auth0RedirectServlet() {
-        this(null);
+        this(new RequestProcessorFactory());
     }
 
     /**
@@ -56,9 +57,6 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
         redirectOnSuccess = readLocalRequiredParameter("com.auth0.redirect_on_success", config);
         redirectOnFail = readLocalRequiredParameter("com.auth0.redirect_on_error", config);
         allowPost = isFlagEnabled("com.auth0.allow_post", config);
-        if (authRequestProcessor != null) {
-            return;
-        }
 
         String domain = readRequiredParameter("com.auth0.domain", config);
         String clientId = readRequiredParameter("com.auth0.client_id", config);
@@ -67,15 +65,14 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
 
         boolean implicitGrantEnabled = isFlagEnabled("com.auth0.use_implicit_grant", config);
         if (!implicitGrantEnabled) {
-            authRequestProcessor = new AuthRequestProcessor(clientHelper, this);
+            requestProcessor = processorFactory.forCodeGrant(clientHelper, this);
             return;
         }
 
-        TokenVerifier verifier;
         String rs256Certificate = config.getInitParameter("com.auth0.certificate");
         if (rs256Certificate == null) {
             try {
-                verifier = new TokenVerifier(clientSecret, clientId, domain);
+                requestProcessor = processorFactory.forImplicitGrantHS(clientHelper, clientSecret, clientId, domain, this);
             } catch (UnsupportedEncodingException e) {
                 throw new ServletException("Missing UTF-8 encoding support.", e);
             }
@@ -83,24 +80,22 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
             byte[] keyBytes;
             try {
                 keyBytes = new PemReader(new StringReader(rs256Certificate)).readPemObject().getContent();
-                verifier = new TokenVerifier(readPublicKey(keyBytes), clientId, domain);
+                requestProcessor = processorFactory.forImplicitGrantRS(clientHelper, keyBytes, clientId, domain, this);
             } catch (IOException e) {
                 throw new ServletException("The PublicKey certificate for RS256 algorithm was invalid.", e);
             }
         }
-
-        authRequestProcessor = new AuthRequestProcessor(clientHelper, verifier, this);
     }
 
     @Override
     public void destroy() {
         super.destroy();
-        authRequestProcessor = null;
+        requestProcessor = null;
     }
 
     //Visible for testing
-    AuthRequestProcessor getAuthRequestProcessor() {
-        return authRequestProcessor;
+    RequestProcessor getRequestProcessor() {
+        return requestProcessor;
     }
 
     /**
@@ -113,7 +108,7 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      */
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        authRequestProcessor.process(req, res);
+        requestProcessor.process(req, res);
     }
 
 
@@ -129,7 +124,7 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         if (allowPost) {
-            authRequestProcessor.process(req, res);
+            requestProcessor.process(req, res);
         } else {
             res.sendError(405);
         }

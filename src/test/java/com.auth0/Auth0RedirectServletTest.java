@@ -10,27 +10,46 @@ import org.springframework.mock.web.MockHttpServletRequest;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class Auth0RedirectServletTest {
+
+    private static final String RS_CERT = "-----BEGIN PUBLIC KEY-----\n" +
+            "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuGbXWiK3dQTyCbX5xdE4\n" +
+            "yCuYp0AF2d15Qq1JSXT/lx8CEcXb9RbDddl8jGDv+spi5qPa8qEHiK7FwV2KpRE9\n" +
+            "83wGPnYsAm9BxLFb4YrLYcDFOIGULuk2FtrPS512Qea1bXASuvYXEpQNpGbnTGVs\n" +
+            "WXI9C+yjHztqyL2h8P6mlThPY9E9ue2fCqdgixfTFIF9Dm4SLHbphUS2iw7w1JgT\n" +
+            "69s7of9+I9l5lsJ9cozf1rxrXX4V1u/SotUuNB3Fp8oB4C1fLBEhSlMcUJirz1E8\n" +
+            "AziMCxS+VrRPDM+zfvpIJg3JljAh3PJHDiLu902v9w+Iplu1WyoB2aPfitxEhRN0\n" +
+            "YwIDAQAB\n" +
+            "-----END PUBLIC KEY-----";
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
     private Auth0RedirectServlet servlet;
     @Mock
-    private AuthRequestProcessor authRequestProcessor;
+    private RequestProcessor requestProcessor;
+    @Mock
+    private RequestProcessorFactory requestProcessorFactory;
     @Mock
     private HttpServletResponse res;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        Auth0RedirectServlet servlet = new Auth0RedirectServlet(authRequestProcessor);
+        when(requestProcessorFactory.forCodeGrant(any(APIClientHelper.class), any(TokensCallback.class))).thenReturn(requestProcessor);
+        when(requestProcessorFactory.forImplicitGrantHS(any(APIClientHelper.class), anyString(), anyString(), anyString(), any(TokensCallback.class))).thenReturn(requestProcessor);
+        when(requestProcessorFactory.forImplicitGrantRS(any(APIClientHelper.class), any(byte[].class), anyString(), anyString(), any(TokensCallback.class))).thenReturn(requestProcessor);
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet(requestProcessorFactory);
         servlet.init(configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com", "/secure/home", "/login"));
         this.servlet = spy(servlet);
     }
@@ -92,7 +111,7 @@ public class Auth0RedirectServletTest {
         Auth0RedirectServlet servlet = new Auth0RedirectServlet();
         ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "domain", "/secure/home", "/login");
         servlet.init(config);
-        assertThat(servlet.getAuthRequestProcessor(), is(notNullValue()));
+        assertThat(servlet.getRequestProcessor(), is(notNullValue()));
     }
 
     @Test
@@ -101,28 +120,135 @@ public class Auth0RedirectServletTest {
         ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "domain", "/secure/home", "/login");
         servlet.init(config);
         servlet.destroy();
-        assertThat(servlet.getAuthRequestProcessor(), is(nullValue()));
+        assertThat(servlet.getRequestProcessor(), is(nullValue()));
     }
 
     @Test
-    public void shouldProcessRequestOnGET() throws Exception {
+    public void shouldProcessRequestOnGETWithCodeGrant() throws Exception {
+        RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
+        when(requestProcessorFactory.forCodeGrant(any(APIClientHelper.class), any(TokensCallback.class))).thenReturn(requestProcessor);
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet(requestProcessorFactory);
+        servlet.init(configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com", "/secure/home", "/login"));
+        servlet = spy(servlet);
+
         HttpServletRequest req = new MockHttpServletRequest();
         servlet.doGet(req, res);
 
-        verify(authRequestProcessor).process(req, res);
+        verify(requestProcessorFactory).forCodeGrant(any(APIClientHelper.class), any(TokensCallback.class));
+        verify(requestProcessor).process(req, res);
     }
 
     @Test
-    public void shouldProcessRequestOnPOSTIfEnabled() throws Exception {
-        Auth0RedirectServlet servlet = new Auth0RedirectServlet(authRequestProcessor);
+    public void shouldProcessRequestOnPOSTIfEnabledWithCodeGrant() throws Exception {
+        RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
+        when(requestProcessorFactory.forCodeGrant(any(APIClientHelper.class), any(TokensCallback.class))).thenReturn(requestProcessor);
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet(requestProcessorFactory);
         ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "domain", "/secure/home", "/login");
         when(config.getInitParameter("com.auth0.allow_post")).thenReturn("true");
         HttpServletRequest req = new MockHttpServletRequest();
         servlet.init(config);
         servlet.doPost(req, res);
 
-        verify(authRequestProcessor).process(req, res);
+        verify(requestProcessorFactory).forCodeGrant(any(APIClientHelper.class), any(TokensCallback.class));
+        verify(requestProcessor).process(req, res);
         verify(res, never()).sendError(anyInt());
+    }
+
+    @Test
+    public void shouldProcessRequestOnGETWithImplicitGrantRS() throws Exception {
+        RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
+        when(requestProcessorFactory.forImplicitGrantRS(any(APIClientHelper.class), any(byte[].class), eq("clientId"), eq("me.auth0.com"), any(TokensCallback.class))).thenReturn(requestProcessor);
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet(requestProcessorFactory);
+        ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com", "/secure/home", "/login");
+        when(config.getInitParameter("com.auth0.allow_post")).thenReturn("true");
+        when(config.getInitParameter("com.auth0.use_implicit_grant")).thenReturn("true");
+        when(config.getInitParameter("com.auth0.certificate")).thenReturn(RS_CERT);
+        HttpServletRequest req = new MockHttpServletRequest();
+        servlet.init(config);
+        servlet.doGet(req, res);
+
+        verify(requestProcessorFactory).forImplicitGrantRS(any(APIClientHelper.class), any(byte[].class), eq("clientId"), eq("me.auth0.com"), any(TokensCallback.class));
+        verify(requestProcessor).process(req, res);
+    }
+
+    @Test
+    public void shouldProcessRequestOnPOSTIfEnabledWithImplicitGrantRS() throws Exception {
+        RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
+        when(requestProcessorFactory.forImplicitGrantRS(any(APIClientHelper.class), any(byte[].class), eq("clientId"), eq("me.auth0.com"), any(TokensCallback.class))).thenReturn(requestProcessor);
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet(requestProcessorFactory);
+        ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com", "/secure/home", "/login");
+        when(config.getInitParameter("com.auth0.allow_post")).thenReturn("true");
+        when(config.getInitParameter("com.auth0.use_implicit_grant")).thenReturn("true");
+        when(config.getInitParameter("com.auth0.certificate")).thenReturn(RS_CERT);
+        HttpServletRequest req = new MockHttpServletRequest();
+        servlet.init(config);
+        servlet.doPost(req, res);
+
+        verify(requestProcessorFactory).forImplicitGrantRS(any(APIClientHelper.class), any(byte[].class), eq("clientId"), eq("me.auth0.com"), any(TokensCallback.class));
+        verify(requestProcessor).process(req, res);
+        verify(res, never()).sendError(anyInt());
+    }
+
+    @Test
+    public void shouldProcessRequestOnGETWithImplicitGrantHS() throws Exception {
+        RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
+        when(requestProcessorFactory.forImplicitGrantHS(any(APIClientHelper.class), eq("clientSecret"), eq("clientId"), eq("me.auth0.com"), any(TokensCallback.class))).thenReturn(requestProcessor);
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet(requestProcessorFactory);
+        ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com", "/secure/home", "/login");
+        when(config.getInitParameter("com.auth0.allow_post")).thenReturn("true");
+        when(config.getInitParameter("com.auth0.use_implicit_grant")).thenReturn("true");
+        HttpServletRequest req = new MockHttpServletRequest();
+        servlet.init(config);
+        servlet.doGet(req, res);
+
+        verify(requestProcessorFactory).forImplicitGrantHS(any(APIClientHelper.class), eq("clientSecret"), eq("clientId"), eq("me.auth0.com"), any(TokensCallback.class));
+        verify(requestProcessor).process(req, res);
+    }
+
+    @Test
+    public void shouldProcessRequestOnPOSTIfEnabledWithImplicitGrantHS() throws Exception {
+        RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
+        when(requestProcessorFactory.forImplicitGrantHS(any(APIClientHelper.class), eq("clientSecret"), eq("clientId"), eq("me.auth0.com"), any(TokensCallback.class))).thenReturn(requestProcessor);
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet(requestProcessorFactory);
+        ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com", "/secure/home", "/login");
+        when(config.getInitParameter("com.auth0.allow_post")).thenReturn("true");
+        when(config.getInitParameter("com.auth0.use_implicit_grant")).thenReturn("true");
+        HttpServletRequest req = new MockHttpServletRequest();
+        servlet.init(config);
+        servlet.doPost(req, res);
+
+        verify(requestProcessorFactory).forImplicitGrantHS(any(APIClientHelper.class), eq("clientSecret"), eq("clientId"), eq("me.auth0.com"), any(TokensCallback.class));
+        verify(requestProcessor).process(req, res);
+        verify(res, never()).sendError(anyInt());
+    }
+
+    @Test
+    public void shouldThrowIfCertificateCanNotBeParsedWithImplicitGrantRS() throws Exception {
+        exception.expect(ServletException.class);
+        exception.expectMessage("The PublicKey certificate for RS256 algorithm was invalid.");
+
+        RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
+        when(requestProcessorFactory.forImplicitGrantRS(any(APIClientHelper.class), any(byte[].class), eq("clientId"), eq("me.auth0.com"), any(TokensCallback.class))).thenThrow(IOException.class);
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet(requestProcessorFactory);
+        ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com", "/secure/home", "/login");
+        when(config.getInitParameter("com.auth0.allow_post")).thenReturn("true");
+        when(config.getInitParameter("com.auth0.use_implicit_grant")).thenReturn("true");
+        when(config.getInitParameter("com.auth0.certificate")).thenReturn(RS_CERT);
+        servlet.init(config);
+    }
+
+    @Test
+    public void shouldThrowIfSecretCanNotBeParsedWithImplicitGrantHS() throws Exception {
+        exception.expect(ServletException.class);
+        exception.expectMessage("Missing UTF-8 encoding support.");
+
+        RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
+        when(requestProcessorFactory.forImplicitGrantHS(any(APIClientHelper.class), eq("clientSecret"), eq("clientId"), eq("me.auth0.com"), any(TokensCallback.class))).thenThrow(UnsupportedEncodingException.class);
+        Auth0RedirectServlet servlet = new Auth0RedirectServlet(requestProcessorFactory);
+        ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com", "/secure/home", "/login");
+        when(config.getInitParameter("com.auth0.allow_post")).thenReturn("true");
+        when(config.getInitParameter("com.auth0.use_implicit_grant")).thenReturn("true");
+        servlet.init(config);
     }
 
     @Test
@@ -130,7 +256,7 @@ public class Auth0RedirectServletTest {
         HttpServletRequest req = new MockHttpServletRequest();
         servlet.doPost(req, res);
 
-        verify(authRequestProcessor, never()).process(req, res);
+        verify(requestProcessor, never()).process(req, res);
         verify(res).sendError(405);
     }
 

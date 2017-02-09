@@ -8,6 +8,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
+import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
@@ -156,6 +157,12 @@ public class ServletUtilsTest {
         String nonce = ServletUtils.removeSessionNonce(req);
         assertThat(nonce, is(nullValue()));
         assertThat(req.getSession().getAttribute("com.auth0.nonce"), is(nullValue()));
+    }
+
+    @Test
+    public void shouldThrowOnReadNullKeyBytes() throws Exception {
+        exception.expect(IOException.class);
+        ServletUtils.readPublicKey(null);
     }
 
 

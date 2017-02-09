@@ -107,7 +107,6 @@ public abstract class ServletUtils {
         return (RSAPublicKey) publicKey;
     }
 
-
     /**
      * Generates a new random string using {@link SecureRandom}.
      * The output can be used as State or Nonce values for API requests.
@@ -121,7 +120,6 @@ public abstract class ServletUtils {
         return Base64.encodeBase64URLSafeString(randomBytes);
     }
 
-
     /**
      * Check's if the request {@link HttpSession} saved state is equal to the given state.
      * After the check, the value will be removed from the session.
@@ -133,6 +131,7 @@ public abstract class ServletUtils {
     public static boolean checkSessionState(HttpServletRequest req, String state) {
         String currentState = (String) getSession(req).getAttribute(SESSION_STATE);
         getSession(req).removeAttribute(SESSION_STATE);
+        System.out.println("Checking State. Current: " + currentState + " AND Expecting: " + state);
         return (currentState == null && state == null) || currentState != null && currentState.equals(state);
     }
 

@@ -5,7 +5,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * Class to deliver the authentication result of the {@link AuthRequestProcessor}
+ * Class to deliver the authentication result of the {@link RequestProcessor}
  */
 interface TokensCallback {
 

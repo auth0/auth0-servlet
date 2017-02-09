@@ -20,7 +20,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
 
-public class AuthRequestProcessorTest {
+public class RequestProcessorTest {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -45,18 +45,18 @@ public class AuthRequestProcessorTest {
     @Test
     public void shouldThrowOnMissingAPIClientHelper() throws Exception {
         exception.expect(NullPointerException.class);
-        new AuthRequestProcessor(null, null, callback);
+        new RequestProcessor(null, null, callback);
     }
 
     @Test
     public void shouldNotThrowOnMissingTokenVerifier() throws Exception {
-        new AuthRequestProcessor(clientHelper, null, callback);
+        new RequestProcessor(clientHelper, null, callback);
     }
 
     @Test
     public void shouldThrowOnMissingCallback() throws Exception {
         exception.expect(NullPointerException.class);
-        new AuthRequestProcessor(clientHelper, null, null);
+        new RequestProcessor(clientHelper, null, null);
     }
 
     @Test
@@ -65,7 +65,7 @@ public class AuthRequestProcessorTest {
         params.put("error", "something happened");
         HttpServletRequest req = getRequest(params);
 
-        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
         handler.process(req, res);
 
         verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
@@ -81,7 +81,7 @@ public class AuthRequestProcessorTest {
         HttpServletRequest req = getRequest(params);
         ServletUtils.setSessionState(req, "9999");
 
-        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
         handler.process(req, res);
 
         verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
@@ -104,7 +104,7 @@ public class AuthRequestProcessorTest {
         HttpServletRequest req = getRequest(params);
         ServletUtils.setSessionState(req, "1234");
 
-        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
         handler.process(req, res);
     }
 
@@ -120,7 +120,7 @@ public class AuthRequestProcessorTest {
 
         when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn("auth0|user123");
 
-        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, verifier, callback);
+        RequestProcessor handler = new RequestProcessor(clientHelper, verifier, callback);
         handler.process(req, res);
 
         verify(clientHelper, never()).fetchUserId(anyString());
@@ -141,7 +141,7 @@ public class AuthRequestProcessorTest {
 
         when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn(null);
 
-        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, verifier, callback);
+        RequestProcessor handler = new RequestProcessor(clientHelper, verifier, callback);
         handler.process(req, res);
 
         verify(clientHelper, never()).fetchUserId(anyString());
@@ -169,7 +169,7 @@ public class AuthRequestProcessorTest {
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theAccessToken")).thenReturn("auth0|user123");
 
-        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
         handler.process(req, res);
         verify(clientHelper).exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback");
         verify(clientHelper).fetchUserId("theAccessToken");
@@ -194,7 +194,7 @@ public class AuthRequestProcessorTest {
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theBestAccessToken")).thenReturn("auth0|user123");
 
-        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
         handler.process(req, res);
         verify(clientHelper).exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback");
         verify(clientHelper).fetchUserId("theBestAccessToken");
@@ -217,7 +217,7 @@ public class AuthRequestProcessorTest {
         ServletUtils.setSessionState(req, "1234");
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenThrow(Auth0Exception.class);
 
-        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
         handler.process(req, res);
         verify(clientHelper).exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback");
 
@@ -240,7 +240,7 @@ public class AuthRequestProcessorTest {
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theAccessToken")).thenThrow(Auth0Exception.class);
 
-        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
         handler.process(req, res);
         verify(clientHelper).fetchUserId("theAccessToken");
 
@@ -263,7 +263,7 @@ public class AuthRequestProcessorTest {
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theAccessToken")).thenReturn(null);
 
-        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
         handler.process(req, res);
         verify(clientHelper).fetchUserId("theAccessToken");
 

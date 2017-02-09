@@ -13,13 +13,14 @@ import java.io.IOException;
  * When the tokens are obtained, it will request the user id associated to them and save it in the {@link javax.servlet.http.HttpSession}.
  */
 @SuppressWarnings("WeakerAccess")
-class AuthRequestProcessor {
+class RequestProcessor {
 
-    private final APIClientHelper clientHelper;
-    private final TokensCallback callback;
-    private final TokenVerifier verifier;
+    //Visible for testing
+    final APIClientHelper clientHelper;
+    final TokensCallback callback;
+    final TokenVerifier verifier;
 
-    public AuthRequestProcessor(APIClientHelper clientHelper, TokenVerifier verifier, TokensCallback callback) {
+    public RequestProcessor(APIClientHelper clientHelper, TokenVerifier verifier, TokensCallback callback) {
         Validate.notNull(clientHelper);
         Validate.notNull(callback);
         this.clientHelper = clientHelper;
@@ -27,7 +28,7 @@ class AuthRequestProcessor {
         this.callback = callback;
     }
 
-    public AuthRequestProcessor(APIClientHelper clientHelper, TokensCallback callback) {
+    public RequestProcessor(APIClientHelper clientHelper, TokensCallback callback) {
         this(clientHelper, null, callback);
     }
 
