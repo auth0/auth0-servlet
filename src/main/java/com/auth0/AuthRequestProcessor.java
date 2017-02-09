@@ -27,6 +27,10 @@ class AuthRequestProcessor {
         this.callback = callback;
     }
 
+    public AuthRequestProcessor(APIClientHelper clientHelper, TokensCallback callback) {
+        this(clientHelper, null, callback);
+    }
+
     /**
      * Entrypoint for HTTP request
      * <p>
@@ -54,12 +58,17 @@ class AuthRequestProcessor {
         if (authorizationCode == null && verifier == null) {
             throw new IllegalStateException("Implicit Grant not allowed.");
         } else if (verifier != null) {
-            userId = verifier.getUserId(tokens.getIdToken());
+            userId = verifier.verifyNonce(tokens.getIdToken());
         } else {
             String redirectUri = req.getRequestURL().toString();
-            Tokens latestTokens = exchangeCodeForTokens(authorizationCode, redirectUri);
-            tokens = mergeTokens(tokens, latestTokens);
-            userId = fetchUserId(tokens);
+            try {
+                Tokens latestTokens = exchangeCodeForTokens(authorizationCode, redirectUri);
+                tokens = mergeTokens(tokens, latestTokens);
+                userId = fetchUserId(tokens);
+            } catch (Auth0Exception e) {
+                callback.onFailure(req, res, e);
+                return;
+            }
         }
 
         if (userId == null) {

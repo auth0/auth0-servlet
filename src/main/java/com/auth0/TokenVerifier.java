@@ -32,7 +32,7 @@ class TokenVerifier {
                 .build();
     }
 
-    public String getUserId(String idToken) {
+    public String verifyNonce(String idToken) {
         Validate.notNull(idToken);
 
         try {

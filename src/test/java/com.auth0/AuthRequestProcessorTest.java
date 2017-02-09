@@ -1,5 +1,6 @@
 package com.auth0;
 
+import com.auth0.exception.Auth0Exception;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,16 +30,16 @@ public class AuthRequestProcessorTest {
     private APIClientHelper clientHelper;
     @Mock
     private HttpServletResponse res;
+    @Mock
+    private TokenVerifier verifier;
     @Captor
     private ArgumentCaptor<Tokens> tokenCaptor;
     @Captor
     private ArgumentCaptor<Throwable> exceptionCaptor;
-    private AuthRequestProcessor handler;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        handler = new AuthRequestProcessor(clientHelper, null, callback);
     }
 
     @Test
@@ -64,6 +65,7 @@ public class AuthRequestProcessorTest {
         params.put("error", "something happened");
         HttpServletRequest req = getRequest(params);
 
+        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
         handler.process(req, res);
 
         verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
@@ -71,7 +73,6 @@ public class AuthRequestProcessorTest {
         assertThat(exceptionCaptor.getValue(), is(instanceOf(IllegalStateException.class)));
         assertThat(exceptionCaptor.getValue().getMessage(), is("Invalid state or error"));
     }
-
 
     @Test
     public void shouldCallOnFailureIfRequestHasInvalidState() throws Exception {
@@ -80,6 +81,7 @@ public class AuthRequestProcessorTest {
         HttpServletRequest req = getRequest(params);
         ServletUtils.setSessionState(req, "9999");
 
+        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
         handler.process(req, res);
 
         verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
@@ -88,96 +90,191 @@ public class AuthRequestProcessorTest {
         assertThat(exceptionCaptor.getValue().getMessage(), is("Invalid state or error"));
     }
 
+    //Implicit Grant
+
     @Test
-    public void shouldFetchUserIdUsingAccessToken() throws Exception {
+    public void shouldThrowOnMissingCodeAndImplicitGrantNotAllowed() throws Exception {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("Implicit Grant not allowed.");
+
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
         params.put("access_token", "theAccessToken");
         params.put("id_token", "theIdToken");
-        params.put("refresh_token", "theRefreshToken");
         HttpServletRequest req = getRequest(params);
         ServletUtils.setSessionState(req, "1234");
 
+        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
         handler.process(req, res);
-        verify(clientHelper).fetchUserId("theAccessToken");
     }
 
     @Test
-    public void shouldCallOnFailureIfCantGetUserId() throws Exception {
+    public void shouldVerifyIdTokenOnImplicitGrant() throws Exception {
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
         params.put("access_token", "theAccessToken");
+        params.put("id_token", "theIdToken");
         HttpServletRequest req = getRequest(params);
         ServletUtils.setSessionState(req, "1234");
 
-        when(clientHelper.fetchUserId("theAccessToken")).thenReturn(null);
+        when(verifier.verifyNonce("theIdToken")).thenReturn("auth0|user123");
 
+        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, verifier, callback);
         handler.process(req, res);
 
+        verify(clientHelper, never()).fetchUserId(anyString());
+        verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
+        assertThat(tokenCaptor.getValue().getAccessToken(), is("theAccessToken"));
+        assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
+        assertThat(ServletUtils.getSessionUserId(req), is("auth0|user123"));
+    }
+
+    @Test
+    public void shouldFailToVerifyIdTokenOnImplicitGrant() throws Exception {
+        Map<String, Object> params = new HashMap<>();
+        params.put("state", "1234");
+        params.put("access_token", "theAccessToken");
+        params.put("id_token", "theIdToken");
+        HttpServletRequest req = getRequest(params);
+        ServletUtils.setSessionState(req, "1234");
+
+        when(verifier.verifyNonce("theIdToken")).thenReturn(null);
+
+        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, verifier, callback);
+        handler.process(req, res);
+
+        verify(clientHelper, never()).fetchUserId(anyString());
         verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
         assertThat(exceptionCaptor.getValue(), is(notNullValue()));
         assertThat(exceptionCaptor.getValue(), is(instanceOf(IllegalStateException.class)));
         assertThat(exceptionCaptor.getValue().getMessage(), is("Couldn't obtain the User Id."));
+        assertThat(ServletUtils.getSessionUserId(req), is(nullValue()));
     }
 
-    @Test
-    public void shouldCallOnSuccessWhenRedirectedWithImplicitGrant() throws Exception {
-        Map<String, Object> params = new HashMap<>();
-        params.put("state", "1234");
-        params.put("access_token", "theAccessToken");
-        params.put("id_token", "theIdToken");
-        params.put("refresh_token", "theRefreshToken");
-        params.put("token_type", "theType");
-        params.put("expires_in", "360000");
-        HttpServletRequest req = getRequest(params);
-        ServletUtils.setSessionState(req, "1234");
 
-        when(clientHelper.fetchUserId("theAccessToken")).thenReturn("auth0|user123");
+    //Code Grant
 
-        handler.process(req, res);
-
-        verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
-        assertThat(ServletUtils.getSessionUserId(req), is("auth0|user123"));
-        assertThat(tokenCaptor.getValue().getAccessToken(), is("theAccessToken"));
-        assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
-        assertThat(tokenCaptor.getValue().getRefreshToken(), is("theRefreshToken"));
-        assertThat(tokenCaptor.getValue().getType(), is("theType"));
-        assertThat(tokenCaptor.getValue().getExpiresIn(), is(360000L));
-    }
 
     @Test
-    public void shouldCallOnSuccessWhenRedirectedWithCodeGrant() throws Exception {
+    public void shouldFetchUserIdUsingAccessTokenOnCodeGrant() throws Exception {
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");
         params.put("state", "1234");
         params.put("access_token", "theAccessToken");
         params.put("id_token", "theIdToken");
-        params.put("refresh_token", "theRefreshToken");
-        params.put("token_type", "theType");
-        params.put("expires_in", "360000");
         HttpServletRequest req = getRequest(params);
         ServletUtils.setSessionState(req, "1234");
+        Tokens betterTokens = mock(Tokens.class);
+        when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
+        when(clientHelper.fetchUserId("theAccessToken")).thenReturn("auth0|user123");
 
-        Tokens codeTokens = mock(Tokens.class);
-        when(codeTokens.getAccessToken()).thenReturn("betterAccessToken");
-        when(codeTokens.getIdToken()).thenReturn("betterIdToken");
-        when(codeTokens.getRefreshToken()).thenReturn("betterRefreshToken");
-        when(codeTokens.getType()).thenReturn("betterType");
-        when(codeTokens.getExpiresIn()).thenReturn(99999L);
-        when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(codeTokens);
-        when(clientHelper.fetchUserId("betterAccessToken")).thenReturn("auth0|user123");
-
+        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
         handler.process(req, res);
+        verify(clientHelper).exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback");
+        verify(clientHelper).fetchUserId("theAccessToken");
 
         verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
         assertThat(ServletUtils.getSessionUserId(req), is("auth0|user123"));
-        assertThat(tokenCaptor.getValue().getAccessToken(), is("betterAccessToken"));
-        assertThat(tokenCaptor.getValue().getIdToken(), is("betterIdToken"));
-        assertThat(tokenCaptor.getValue().getRefreshToken(), is("betterRefreshToken"));
-        assertThat(tokenCaptor.getValue().getType(), is("betterType"));
-        assertThat(tokenCaptor.getValue().getExpiresIn(), is(99999L));
+        assertThat(tokenCaptor.getValue().getAccessToken(), is("theAccessToken"));
+        assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
     }
 
+    @Test
+    public void shouldFetchUserIdUsingTheBestAccessTokenOnCodeGrant() throws Exception {
+        Map<String, Object> params = new HashMap<>();
+        params.put("code", "abc123");
+        params.put("state", "1234");
+        params.put("access_token", "theAccessToken");
+        params.put("id_token", "theIdToken");
+        HttpServletRequest req = getRequest(params);
+        ServletUtils.setSessionState(req, "1234");
+        Tokens betterTokens = mock(Tokens.class);
+        when(betterTokens.getAccessToken()).thenReturn("theBestAccessToken");
+        when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
+        when(clientHelper.fetchUserId("theBestAccessToken")).thenReturn("auth0|user123");
+
+        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        handler.process(req, res);
+        verify(clientHelper).exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback");
+        verify(clientHelper).fetchUserId("theBestAccessToken");
+
+        verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
+        assertThat(ServletUtils.getSessionUserId(req), is("auth0|user123"));
+        assertThat(tokenCaptor.getValue().getAccessToken(), is("theBestAccessToken"));
+        assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
+    }
+
+
+    @Test
+    public void shouldThrowOnExchangeTheAuthorizationCodeOnCodeGrant() throws Exception {
+        Map<String, Object> params = new HashMap<>();
+        params.put("code", "abc123");
+        params.put("state", "1234");
+        params.put("access_token", "theAccessToken");
+        params.put("id_token", "theIdToken");
+        HttpServletRequest req = getRequest(params);
+        ServletUtils.setSessionState(req, "1234");
+        when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenThrow(Auth0Exception.class);
+
+        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        handler.process(req, res);
+        verify(clientHelper).exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback");
+
+        verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
+        assertThat(exceptionCaptor.getValue(), is(notNullValue()));
+        assertThat(exceptionCaptor.getValue(), is(instanceOf(Auth0Exception.class)));
+        assertThat(ServletUtils.getSessionUserId(req), is(nullValue()));
+    }
+
+    @Test
+    public void shouldThrowOnFetchTheUserIdOnCodeGrant() throws Exception {
+        Map<String, Object> params = new HashMap<>();
+        params.put("code", "abc123");
+        params.put("state", "1234");
+        params.put("access_token", "theAccessToken");
+        params.put("id_token", "theIdToken");
+        HttpServletRequest req = getRequest(params);
+        ServletUtils.setSessionState(req, "1234");
+        Tokens betterTokens = mock(Tokens.class);
+        when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
+        when(clientHelper.fetchUserId("theAccessToken")).thenThrow(Auth0Exception.class);
+
+        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        handler.process(req, res);
+        verify(clientHelper).fetchUserId("theAccessToken");
+
+        verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
+        assertThat(exceptionCaptor.getValue(), is(notNullValue()));
+        assertThat(exceptionCaptor.getValue(), is(instanceOf(Auth0Exception.class)));
+        assertThat(ServletUtils.getSessionUserId(req), is(nullValue()));
+    }
+
+    @Test
+    public void shouldFailToGetTheUserIdOnCodeGrant() throws Exception {
+        Map<String, Object> params = new HashMap<>();
+        params.put("code", "abc123");
+        params.put("state", "1234");
+        params.put("access_token", "theAccessToken");
+        params.put("id_token", "theIdToken");
+        HttpServletRequest req = getRequest(params);
+        ServletUtils.setSessionState(req, "1234");
+        Tokens betterTokens = mock(Tokens.class);
+        when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
+        when(clientHelper.fetchUserId("theAccessToken")).thenReturn(null);
+
+        AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, callback);
+        handler.process(req, res);
+        verify(clientHelper).fetchUserId("theAccessToken");
+
+        verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
+        assertThat(exceptionCaptor.getValue(), is(notNullValue()));
+        assertThat(exceptionCaptor.getValue(), is(instanceOf(IllegalStateException.class)));
+        assertThat(exceptionCaptor.getValue().getMessage(), is("Couldn't obtain the User Id."));
+        assertThat(ServletUtils.getSessionUserId(req), is(nullValue()));
+    }
+
+
+    // Utils
 
     private HttpServletRequest getRequest(Map<String, Object> parameters) {
         MockHttpServletRequest request = new MockHttpServletRequest();
