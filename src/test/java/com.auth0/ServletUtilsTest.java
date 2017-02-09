@@ -131,6 +131,33 @@ public class ServletUtilsTest {
         assertThat(req.getSession().getAttribute("com.auth0.state"), is(nullValue()));
     }
 
+    @Test
+    public void shouldSetNonce() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+
+        ServletUtils.setSessionNonce(req, "123456");
+        assertThat((String) req.getSession().getAttribute("com.auth0.nonce"), is("123456"));
+    }
+
+    @Test
+    public void shouldGetAndRemoveNonce() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        req.getSession().setAttribute("com.auth0.nonce", "123456");
+
+        String nonce = ServletUtils.removeSessionNonce(req);
+        assertThat(nonce, is("123456"));
+        assertThat(req.getSession().getAttribute("com.auth0.nonce"), is(nullValue()));
+    }
+
+    @Test
+    public void shouldGetAndRemoveNonceIfMissing() throws Exception {
+        MockHttpServletRequest req = new MockHttpServletRequest();
+
+        String nonce = ServletUtils.removeSessionNonce(req);
+        assertThat(nonce, is(nullValue()));
+        assertThat(req.getSession().getAttribute("com.auth0.nonce"), is(nullValue()));
+    }
+
 
     private ServletConfig configureServlet(String servletValue, String contextValue) {
         ServletContext context = mock(ServletContext.class);

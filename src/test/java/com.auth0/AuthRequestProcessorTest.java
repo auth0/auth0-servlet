@@ -116,8 +116,9 @@ public class AuthRequestProcessorTest {
         params.put("id_token", "theIdToken");
         HttpServletRequest req = getRequest(params);
         ServletUtils.setSessionState(req, "1234");
+        ServletUtils.setSessionNonce(req, "nnnccc");
 
-        when(verifier.verifyNonce("theIdToken")).thenReturn("auth0|user123");
+        when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn("auth0|user123");
 
         AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, verifier, callback);
         handler.process(req, res);
@@ -138,7 +139,7 @@ public class AuthRequestProcessorTest {
         HttpServletRequest req = getRequest(params);
         ServletUtils.setSessionState(req, "1234");
 
-        when(verifier.verifyNonce("theIdToken")).thenReturn(null);
+        when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn(null);
 
         AuthRequestProcessor handler = new AuthRequestProcessor(clientHelper, verifier, callback);
         handler.process(req, res);

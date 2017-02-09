@@ -7,12 +7,19 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.security.KeyFactory;
+import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "unused"})
 public abstract class ServletUtils {
 
     private static final String SESSION_STATE = "com.auth0.state";
+    private static final String SESSION_NONCE = "com.auth0.nonce";
     private static final String SESSION_USER_ID = "com.auth0.userId";
 
     /**
@@ -81,6 +88,27 @@ public abstract class ServletUtils {
     }
 
     /**
+     * Read the bytes of a PKCS8 RSA Public Key Certificate.
+     *
+     * @param keyBytes the certificate bytes.
+     * @return the parsed RSA Public Key.
+     * @throws IOException if something happened when trying to parse the certificate bytes.
+     */
+    static RSAPublicKey readPublicKey(byte[] keyBytes) throws IOException {
+        PublicKey publicKey;
+        try {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+            publicKey = kf.generatePublic(keySpec);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+
+        return (RSAPublicKey) publicKey;
+    }
+
+
+    /**
      * Generates a new random string using {@link SecureRandom}.
      * The output can be used as State or Nonce values for API requests.
      *
@@ -117,6 +145,29 @@ public abstract class ServletUtils {
      */
     public static void setSessionState(HttpServletRequest req, String state) {
         getSession(req).setAttribute(SESSION_STATE, state);
+    }
+
+    /**
+     * Saves the given nonce in the request {@link HttpSession}.
+     * If a nonce is already bound to the session, the value is replaced.
+     *
+     * @param req   the request.
+     * @param nonce the nonce value to set.
+     */
+    public static void setSessionNonce(HttpServletRequest req, String nonce) {
+        getSession(req).setAttribute(SESSION_NONCE, nonce);
+    }
+
+    /**
+     * Removes the nonce present in the request {@link HttpSession} and then returns it.
+     *
+     * @param req the HTTP Servlet request.
+     * @return the nonce value or null if it was not set.
+     */
+    static String removeSessionNonce(HttpServletRequest req) {
+        String nonce = (String) getSession(req).getAttribute(SESSION_NONCE);
+        getSession(req).removeAttribute(SESSION_NONCE);
+        return nonce;
     }
 
     /**

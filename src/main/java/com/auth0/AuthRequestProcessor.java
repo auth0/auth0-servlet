@@ -41,7 +41,6 @@ class AuthRequestProcessor {
      * 5). Clearing the stored state value.
      * 6). Handling success and any failure outcomes.
      *
-     * @throws Auth0Exception
      * @throws IOException
      */
     public void process(HttpServletRequest req, HttpServletResponse res) throws IOException {
@@ -58,7 +57,8 @@ class AuthRequestProcessor {
         if (authorizationCode == null && verifier == null) {
             throw new IllegalStateException("Implicit Grant not allowed.");
         } else if (verifier != null) {
-            userId = verifier.verifyNonce(tokens.getIdToken());
+            String expectedNonce = ServletUtils.removeSessionNonce(req);
+            userId = verifier.verifyNonce(tokens.getIdToken(), expectedNonce);
         } else {
             String redirectUri = req.getRequestURL().toString();
             try {
