@@ -121,9 +121,11 @@ The list of required parameters for the servlet to initiate is:
 
 
 #### Implicit Grant
-**Code Grant is the default, safest and recommended method.** You can still use Implicit Grant if you enable it explicitly using the flag `com.auth0.use_implicit_grant`. If the value `com.auth0.certificate` is also present, the token validation will be performed using the **RS256** algorithm and the given RSA certificate. In case the certificate is not defined, the token validation will be performed using the **HS256** algorithm and the client secret.
+**Code Grant is the default, safest and recommended method.** You can still use Implicit Grant if you enable it explicitly using the flag `com.auth0.use_implicit_grant`. Implicit Grant only works if the requests are made to the Servlet using the Http POST method. Enable the `com.auth0.allow_post` and make sure to request the login with the 'response_mode=form_post' parameter. 
 
-If the Implicit Grant is disabled (default behaviour) and the authorization code is missing from the request parameters, an exception will raise.
+The token validation will by default be performed using the **HS256** algorithm and the Client Secret. If you define the value `com.auth0.certificate`, the token validation will be performed using the **RS256** algorithm and the given RSA certificate.
+
+If the Implicit Grant is disabled (default behaviour) and the Authorization Code is missing from the request parameters, an exception will raise.
 
 ## Usage
 

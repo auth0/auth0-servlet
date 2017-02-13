@@ -23,6 +23,7 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
     private String redirectOnSuccess;
     private String redirectOnFail;
     private boolean allowPost;
+    private boolean useImplicitGrant;
 
     //Visible for testing
     @SuppressWarnings("WeakerAccess")
@@ -61,10 +62,13 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
         String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
         APIClientHelper clientHelper = new APIClientHelper(new AuthAPI(domain, clientId, clientSecret));
 
-        boolean implicitGrantEnabled = isFlagEnabled("com.auth0.use_implicit_grant", config);
-        if (!implicitGrantEnabled) {
+        useImplicitGrant = isFlagEnabled("com.auth0.use_implicit_grant", config);
+        if (!useImplicitGrant) {
             requestProcessor = processorFactory.forCodeGrant(clientHelper, this);
             return;
+        }
+        if (!allowPost) {
+            throw new ServletException("Implicit Grant can only be used with a POST method. Enable the 'com.auth0.allow_post' parameter in the Servlet configuration and make sure to request the login with the 'response_mode=form_post' parameter.");
         }
 
         String certificate = config.getInitParameter("com.auth0.certificate");
@@ -105,7 +109,11 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      */
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        requestProcessor.process(req, res);
+        if (!useImplicitGrant) {
+            requestProcessor.process(req, res);
+        } else {
+            res.sendError(405);
+        }
     }
 
 

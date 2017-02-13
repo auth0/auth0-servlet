@@ -8,6 +8,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
+import java.io.IOException;
 import java.security.interfaces.RSAPublicKey;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -164,9 +165,16 @@ public class ServletUtilsTest {
     }
 
     @Test
-    public void shouldThrowOnReadNullKeyPath() throws Exception {
+    public void shouldThrowOnReadRSAKeyWithNullPath() throws Exception {
         exception.expect(NullPointerException.class);
         ServletUtils.readPublicKeyFromFile(null);
+    }
+
+    @Test
+    public void shouldThrowOnReadRSAKeyFromMissingFile() throws Exception {
+        exception.expect(IOException.class);
+        exception.expectMessage("Couldn't parse the RSA Public Key / Certificate file.");
+        ServletUtils.readPublicKeyFromFile("/not/existing/file");
     }
 
     @Test
