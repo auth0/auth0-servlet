@@ -8,7 +8,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
-import java.io.IOException;
+import java.security.interfaces.RSAPublicKey;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
@@ -16,6 +16,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ServletUtilsTest {
+
+    private static final String RS_CERTIFICATE = "src/test/resources/certificate.pem";
+    private static final String RS_PUBLIC_KEY = "src/test/resources/public_key.pem";
+
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
@@ -160,11 +164,22 @@ public class ServletUtilsTest {
     }
 
     @Test
-    public void shouldThrowOnReadNullKeyBytes() throws Exception {
-        exception.expect(IOException.class);
-        ServletUtils.readPublicKey(null);
+    public void shouldThrowOnReadNullKeyPath() throws Exception {
+        exception.expect(NullPointerException.class);
+        ServletUtils.readPublicKeyFromFile(null);
     }
 
+    @Test
+    public void shouldReadRSAKeyFromPublicKeyFile() throws Exception {
+        RSAPublicKey key = ServletUtils.readPublicKeyFromFile(RS_PUBLIC_KEY);
+        assertThat(key, is(notNullValue()));
+    }
+
+    @Test
+    public void shouldReadRSAKeyFromCertificateFile() throws Exception {
+        RSAPublicKey key = ServletUtils.readPublicKeyFromFile(RS_CERTIFICATE);
+        assertThat(key, is(notNullValue()));
+    }
 
     private ServletConfig configureServlet(String servletValue, String contextValue) {
         ServletContext context = mock(ServletContext.class);

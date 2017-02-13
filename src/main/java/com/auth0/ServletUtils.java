@@ -2,18 +2,26 @@ package com.auth0;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
+import org.bouncycastle.util.io.pem.PemReader;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Scanner;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 public abstract class ServletUtils {
@@ -21,6 +29,7 @@ public abstract class ServletUtils {
     private static final String SESSION_STATE = "com.auth0.state";
     private static final String SESSION_NONCE = "com.auth0.nonce";
     private static final String SESSION_USER_ID = "com.auth0.userId";
+    private static final String RSA_CERTIFICATE_HEADER = "-----BEGIN CERTIFICATE-----";
 
     /**
      * Attempts to get a required property from the {@link ServletConfig}. If it's not present there, it will try
@@ -88,23 +97,43 @@ public abstract class ServletUtils {
     }
 
     /**
-     * Read the bytes of a PKCS8 RSA Public Key Certificate.
+     * Read the bytes of a PKCS8 RSA Public Key or Certificate.
      *
-     * @param keyBytes the certificate bytes.
+     * @param path the RSA certificate or public key file path.
      * @return the parsed RSA Public Key.
      * @throws IOException if something happened when trying to parse the certificate bytes.
      */
-    static RSAPublicKey readPublicKey(byte[] keyBytes) throws IOException {
-        PublicKey publicKey;
+    static RSAPublicKey readPublicKeyFromFile(final String path) throws IOException {
+        Validate.notNull(path);
+        Scanner scanner = null;
+        PemReader pemReader = null;
         try {
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
-            publicKey = kf.generatePublic(keySpec);
+            scanner = new Scanner(Paths.get(path));
+            if (scanner.hasNextLine() && scanner.nextLine().startsWith(RSA_CERTIFICATE_HEADER)) {
+                FileInputStream fs = new FileInputStream(path);
+                CertificateFactory fact = CertificateFactory.getInstance("X.509");
+                X509Certificate cer = (X509Certificate) fact.generateCertificate(fs);
+                PublicKey key = cer.getPublicKey();
+                fs.close();
+                return (RSAPublicKey) key;
+            } else {
+                pemReader = new PemReader(new FileReader(path));
+                byte[] keyBytes = pemReader.readPemObject().getContent();
+                PublicKey publicKey;
+                KeyFactory kf = KeyFactory.getInstance("RSA");
+                EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+                return (RSAPublicKey) kf.generatePublic(keySpec);
+            }
         } catch (Exception e) {
-            throw new IOException(e);
+            throw new IOException("Couldn't parse the RSA Public Key / Certificate file.", e);
+        } finally {
+            if (scanner != null) {
+                scanner.close();
+            }
+            if (pemReader != null) {
+                pemReader.close();
+            }
         }
-
-        return (RSAPublicKey) publicKey;
     }
 
     /**
@@ -131,7 +160,6 @@ public abstract class ServletUtils {
     public static boolean checkSessionState(HttpServletRequest req, String state) {
         String currentState = (String) getSession(req).getAttribute(SESSION_STATE);
         getSession(req).removeAttribute(SESSION_STATE);
-        System.out.println("Checking State. Current: " + currentState + " AND Expecting: " + state);
         return (currentState == null && state == null) || currentState != null && currentState.equals(state);
     }
 

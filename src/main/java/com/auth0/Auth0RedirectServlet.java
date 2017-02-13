@@ -1,7 +1,6 @@
 package com.auth0;
 
 import com.auth0.client.auth.AuthAPI;
-import org.bouncycastle.util.io.pem.PemReader;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -9,7 +8,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 
 import static com.auth0.ServletUtils.*;
@@ -69,20 +67,19 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
             return;
         }
 
-        String rs256Certificate = config.getInitParameter("com.auth0.certificate");
-        if (rs256Certificate == null) {
+        String certificate = config.getInitParameter("com.auth0.certificate");
+        if (certificate == null) {
             try {
                 requestProcessor = processorFactory.forImplicitGrantHS(clientHelper, clientSecret, clientId, domain, this);
             } catch (UnsupportedEncodingException e) {
                 throw new ServletException("Missing UTF-8 encoding support.", e);
             }
         } else {
-            byte[] keyBytes;
             try {
-                keyBytes = new PemReader(new StringReader(rs256Certificate)).readPemObject().getContent();
-                requestProcessor = processorFactory.forImplicitGrantRS(clientHelper, keyBytes, clientId, domain, this);
-            } catch (IOException e) {
-                throw new ServletException("The PublicKey certificate for RS256 algorithm was invalid.", e);
+                String path = config.getServletContext().getRealPath(certificate);
+                requestProcessor = processorFactory.forImplicitGrantRS(clientHelper, path, clientId, domain, this);
+            } catch (Exception e) {
+                throw new ServletException("The PublicKey or Certificate for RS256 algorithm was invalid.", e);
             }
         }
     }

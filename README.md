@@ -112,12 +112,12 @@ The list of required parameters for the servlet to initiate is:
 * `com.auth0.redirect_on_authentication_error`: Defines the path to call when the user tries to access a protected endpoint without logging in first. Must be defined in the **local Filter scope**.
 * `com.auth0.domain`: Auth0 Domain. Can be defined either in the local or the global Servlet context.
 * `com.auth0.client_id`: Auth0 Client ID. Can be defined either in the local or the global Servlet context.
-* `com.auth0.client_secret`: Auth0 Client Secret. Can be defined either in the local or the global Servlet context.
+* `com.auth0.client_secret`: Auth0 Client Secret. It will also be used to verify the tokens with the `HS256` algorithm in case the Implicit Grant flow is enabled and no certificate file path is present. Can be defined either in the local or the global Servlet context.
 
 **Optional:**
 * `com.auth0.allow_post`: Whether requests with POST method are accepted or not. The value must be `true` to be considered enabled. Must be defined in the **local Servlet scope**.
 * `com.auth0.use_implicit_grant`: Whether requests without an authorization code should be allowed or not. The value must be `true` to be considered enabled. Must be defined in the **local Servlet scope**.
-* `com.auth0.certificate`: Whether requests with POST method are accepted or not. The value must be `true` to be considered enabled. Must be defined in the **local Servlet scope**.
+* `com.auth0.certificate`: The path relative to the `webapp` folder where the PEM file containing the RSA Public Key or Certificate is located, in case the Implicit Grant flow is enabled. The `RS256` algorithm will be used to verify the tokens. Must be defined in the **local Servlet scope**.
 
 
 #### Implicit Grant
