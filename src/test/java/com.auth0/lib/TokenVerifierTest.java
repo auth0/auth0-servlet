@@ -1,4 +1,4 @@
-package com.auth0;
+package com.auth0.lib;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -6,7 +6,7 @@ import org.junit.rules.ExpectedException;
 
 import java.security.interfaces.RSAPublicKey;
 
-import static com.auth0.ServletUtils.readPublicKeyFromFile;
+import static com.auth0.lib.ServletUtils.readPublicKeyFromFile;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;

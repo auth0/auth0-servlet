@@ -1,4 +1,4 @@
-package com.auth0;
+package com.auth0.lib;
 
 import com.auth0.exception.Auth0Exception;
 import org.junit.Before;

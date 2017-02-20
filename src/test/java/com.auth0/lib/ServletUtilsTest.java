@@ -1,4 +1,4 @@
-package com.auth0;
+package com.auth0.lib;
 
 import org.junit.Assert;
 import org.junit.Rule;

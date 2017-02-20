@@ -1,4 +1,4 @@
-package com.auth0;
+package com.auth0.lib;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +23,7 @@ import java.security.spec.EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Scanner;
 
-@SuppressWarnings({"WeakerAccess", "unused"})
+@SuppressWarnings({"unused"})
 public abstract class ServletUtils {
 
     private static final String SESSION_STATE = "com.auth0.state";
@@ -60,7 +60,8 @@ public abstract class ServletUtils {
      * @return the parameter value
      * @throws IllegalArgumentException if the required value is not present or it's empty.
      */
-    static String readLocalRequiredParameter(String parameter, ServletConfig config) throws IllegalArgumentException {
+    @SuppressWarnings("WeakerAccess")
+    public static String readLocalRequiredParameter(String parameter, ServletConfig config) throws IllegalArgumentException {
         String initParam = config.getInitParameter(parameter);
         if (StringUtils.isNotEmpty(initParam)) {
             return initParam;
@@ -76,7 +77,8 @@ public abstract class ServletUtils {
      * @return the parameter value
      * @throws IllegalArgumentException if the required value is not present or it's empty.
      */
-    static String readLocalRequiredParameter(String parameter, FilterConfig config) throws IllegalArgumentException {
+    @SuppressWarnings("WeakerAccess")
+    public static String readLocalRequiredParameter(String parameter, FilterConfig config) throws IllegalArgumentException {
         String initParam = config.getInitParameter(parameter);
         if (StringUtils.isNotEmpty(initParam)) {
             return initParam;
@@ -142,6 +144,7 @@ public abstract class ServletUtils {
      *
      * @return a new random string.
      */
+    @SuppressWarnings("WeakerAccess")
     public static String secureRandomString() {
         final SecureRandom sr = new SecureRandom();
         final byte[] randomBytes = new byte[32];
@@ -157,7 +160,7 @@ public abstract class ServletUtils {
      * @param state the state value to compare against.
      * @return whether the state matches the expected one or not.
      */
-    public static boolean checkSessionState(HttpServletRequest req, String state) {
+    static boolean checkSessionState(HttpServletRequest req, String state) {
         String currentState = (String) getSession(req).getAttribute(SESSION_STATE);
         getSession(req).removeAttribute(SESSION_STATE);
         return (currentState == null && state == null) || currentState != null && currentState.equals(state);
@@ -170,6 +173,7 @@ public abstract class ServletUtils {
      * @param req   the request.
      * @param state the state value to set.
      */
+    @SuppressWarnings("WeakerAccess")
     public static void setSessionState(HttpServletRequest req, String state) {
         getSession(req).setAttribute(SESSION_STATE, state);
     }
@@ -181,6 +185,7 @@ public abstract class ServletUtils {
      * @param req   the request.
      * @param nonce the nonce value to set.
      */
+    @SuppressWarnings("WeakerAccess")
     public static void setSessionNonce(HttpServletRequest req, String nonce) {
         getSession(req).setAttribute(SESSION_NONCE, nonce);
     }
@@ -203,6 +208,7 @@ public abstract class ServletUtils {
      * @param req the HTTP Servlet request.
      * @return the user id value.
      */
+    @SuppressWarnings("WeakerAccess")
     public static String getSessionUserId(HttpServletRequest req) {
         return (String) getSession(req).getAttribute(SESSION_USER_ID);
     }

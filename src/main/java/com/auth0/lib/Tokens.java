@@ -1,4 +1,4 @@
-package com.auth0;
+package com.auth0.lib;
 
 import java.io.Serializable;
 

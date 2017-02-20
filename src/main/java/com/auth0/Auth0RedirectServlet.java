@@ -1,6 +1,8 @@
 package com.auth0;
 
-import com.auth0.client.auth.AuthAPI;
+import com.auth0.lib.Auth0Servlets;
+import com.auth0.lib.Tokens;
+import com.auth0.lib.TokensCallback;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -8,31 +10,29 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
-import static com.auth0.ServletUtils.*;
+import static com.auth0.lib.ServletUtils.readLocalRequiredParameter;
 
 /**
  * The Servlet endpoint used as the callback handler in the OAuth 2.0 authorization code grant flow.
  * It will be called with the authorization code after a successful login.
  */
+@SuppressWarnings("WeakerAccess")
 public class Auth0RedirectServlet extends HttpServlet implements TokensCallback {
 
-    private final RequestProcessorFactory processorFactory;
-    private RequestProcessor requestProcessor;
+    private final Auth0ServletsFactory factory;
     private String redirectOnSuccess;
     private String redirectOnFail;
-    private boolean allowPost;
-    private boolean useImplicitGrant;
+    private Auth0Servlets auth0Servlets;
 
-    //Visible for testing
-    @SuppressWarnings("WeakerAccess")
-    Auth0RedirectServlet(RequestProcessorFactory factory) {
-        this.processorFactory = factory;
-    }
 
     public Auth0RedirectServlet() {
-        this(new RequestProcessorFactory());
+        this(new Auth0ServletsFactory());
+    }
+
+    //Visible for testing
+    Auth0RedirectServlet(Auth0ServletsFactory factory) {
+        this.factory = factory;
     }
 
     /**
@@ -55,48 +55,18 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
         super.init(config);
         redirectOnSuccess = readLocalRequiredParameter("com.auth0.redirect_on_success", config);
         redirectOnFail = readLocalRequiredParameter("com.auth0.redirect_on_error", config);
-        allowPost = isFlagEnabled("com.auth0.allow_post", config);
-
-        String domain = readRequiredParameter("com.auth0.domain", config);
-        String clientId = readRequiredParameter("com.auth0.client_id", config);
-        String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
-        APIClientHelper clientHelper = new APIClientHelper(new AuthAPI(domain, clientId, clientSecret));
-
-        useImplicitGrant = isFlagEnabled("com.auth0.use_implicit_grant", config);
-        if (!useImplicitGrant) {
-            requestProcessor = processorFactory.forCodeGrant(clientHelper, this);
-            return;
-        }
-        if (!allowPost) {
-            throw new ServletException("Implicit Grant can only be used with a POST method. Enable the 'com.auth0.allow_post' parameter in the Servlet configuration and make sure to request the login with the 'response_mode=form_post' parameter.");
-        }
-
-        String certificate = config.getInitParameter("com.auth0.certificate");
-        if (certificate == null) {
-            try {
-                requestProcessor = processorFactory.forImplicitGrantHS(clientHelper, clientSecret, clientId, domain, this);
-            } catch (UnsupportedEncodingException e) {
-                throw new ServletException("Missing UTF-8 encoding support.", e);
-            }
-        } else {
-            try {
-                String path = config.getServletContext().getRealPath(certificate);
-                requestProcessor = processorFactory.forImplicitGrantRS(clientHelper, path, clientId, domain, this);
-            } catch (Exception e) {
-                throw new ServletException("The PublicKey or Certificate for RS256 algorithm was invalid.", e);
-            }
-        }
+        auth0Servlets = factory.newInstance(config, this);
     }
 
     @Override
     public void destroy() {
         super.destroy();
-        requestProcessor = null;
+        auth0Servlets = null;
     }
 
     //Visible for testing
-    RequestProcessor getRequestProcessor() {
-        return requestProcessor;
+    Auth0Servlets getAuth0Servlets() {
+        return auth0Servlets;
     }
 
     /**
@@ -109,11 +79,7 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      */
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        if (!useImplicitGrant) {
-            requestProcessor.process(req, res);
-        } else {
-            res.sendError(405);
-        }
+        auth0Servlets.process(req, res);
     }
 
 
@@ -128,11 +94,7 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      */
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        if (allowPost) {
-            requestProcessor.process(req, res);
-        } else {
-            res.sendError(405);
-        }
+        auth0Servlets.process(req, res);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.auth0;
+package com.auth0.lib;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -7,7 +7,7 @@ import java.io.IOException;
 /**
  * Class to deliver the authentication result of the {@link RequestProcessor}
  */
-interface TokensCallback {
+public interface TokensCallback {
 
     /**
      * The Auth0 authentication succeeded. The User Id is available in the session by calling {@link ServletUtils#getSessionUserId(HttpServletRequest)}.

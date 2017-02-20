@@ -1,11 +1,13 @@
 package com.auth0;
 
+import com.auth0.lib.ServletUtils;
+
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static com.auth0.ServletUtils.readLocalRequiredParameter;
+import static com.auth0.lib.ServletUtils.readLocalRequiredParameter;
 
 /**
  * Filter class to check if a valid session exists. This will be true if the User Id is present.

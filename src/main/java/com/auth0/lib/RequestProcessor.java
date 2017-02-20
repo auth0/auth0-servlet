@@ -1,4 +1,4 @@
-package com.auth0;
+package com.auth0.lib;
 
 import com.auth0.exception.Auth0Exception;
 import org.apache.commons.lang3.Validate;
@@ -20,7 +20,7 @@ class RequestProcessor {
     final TokensCallback callback;
     final TokenVerifier verifier;
 
-    public RequestProcessor(APIClientHelper clientHelper, TokenVerifier verifier, TokensCallback callback) {
+    RequestProcessor(APIClientHelper clientHelper, TokenVerifier verifier, TokensCallback callback) {
         Validate.notNull(clientHelper);
         Validate.notNull(callback);
         this.clientHelper = clientHelper;
@@ -28,7 +28,7 @@ class RequestProcessor {
         this.callback = callback;
     }
 
-    public RequestProcessor(APIClientHelper clientHelper, TokensCallback callback) {
+    RequestProcessor(APIClientHelper clientHelper, TokensCallback callback) {
         this(clientHelper, null, callback);
     }
 
@@ -44,7 +44,7 @@ class RequestProcessor {
      *
      * @throws IOException
      */
-    public void process(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    void process(HttpServletRequest req, HttpServletResponse res) throws IOException {
         boolean validRequest = isValidRequest(req);
         if (!validRequest) {
             callback.onFailure(req, res, new IllegalStateException("Invalid state or error"));

@@ -1,9 +1,7 @@
-package com.auth0;
+package com.auth0.lib;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-
-import static com.auth0.ServletUtils.readPublicKeyFromFile;
 
 class RequestProcessorFactory {
 
@@ -17,7 +15,7 @@ class RequestProcessorFactory {
     }
 
     RequestProcessor forImplicitGrantRS(APIClientHelper clientHelper, String certificatePath, String clientId, String domain, TokensCallback callback) throws IOException {
-        TokenVerifier verifier = new TokenVerifier(readPublicKeyFromFile(certificatePath), clientId, domain);
+        TokenVerifier verifier = new TokenVerifier(ServletUtils.readPublicKeyFromFile(certificatePath), clientId, domain);
         return new RequestProcessor(clientHelper, verifier, callback);
     }
 }

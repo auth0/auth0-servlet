@@ -1,6 +1,6 @@
 package com.auth0.example;
 
-import com.auth0.ServletUtils;
+import com.auth0.lib.ServletUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
