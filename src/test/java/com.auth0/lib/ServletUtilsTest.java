@@ -1,5 +1,6 @@
 package com.auth0.lib;
 
+import com.auth0.lib.ServletUtils;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

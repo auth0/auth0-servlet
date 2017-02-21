@@ -40,7 +40,7 @@ public abstract class ServletUtils {
      * @return the parameter value
      * @throws IllegalArgumentException if the required value is not present or it's empty.
      */
-    static String readRequiredParameter(String parameter, ServletConfig config) throws IllegalArgumentException {
+    public static String readRequiredParameter(String parameter, ServletConfig config) throws IllegalArgumentException {
         String initParam = config.getInitParameter(parameter);
         if (StringUtils.isNotEmpty(initParam)) {
             return initParam;
@@ -93,7 +93,7 @@ public abstract class ServletUtils {
      * @param config the servlet config to search
      * @return whether the value was present and it's value was equal to 'true' or not.
      */
-    static boolean isFlagEnabled(String name, ServletConfig config) {
+    public static boolean isFlagEnabled(String name, ServletConfig config) {
         String textFlag = config.getInitParameter(name);
         return textFlag != null && textFlag.equals("true");
     }

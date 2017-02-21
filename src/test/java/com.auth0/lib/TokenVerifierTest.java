@@ -1,5 +1,6 @@
 package com.auth0.lib;
 
+import com.auth0.lib.TokenVerifier;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

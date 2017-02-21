@@ -13,7 +13,7 @@ import java.io.IOException;
  * When the tokens are obtained, it will request the user id associated to them and save it in the {@link javax.servlet.http.HttpSession}.
  */
 @SuppressWarnings("WeakerAccess")
-class RequestProcessor {
+public class RequestProcessor {
 
     //Visible for testing
     final APIClientHelper clientHelper;

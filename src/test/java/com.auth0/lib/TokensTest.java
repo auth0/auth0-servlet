@@ -1,5 +1,6 @@
 package com.auth0.lib;
 
+import com.auth0.lib.Tokens;
 import org.junit.Test;
 
 import static org.hamcrest.core.Is.is;

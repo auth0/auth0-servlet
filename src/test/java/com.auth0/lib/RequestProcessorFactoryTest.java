@@ -1,5 +1,9 @@
 package com.auth0.lib;
 
+import com.auth0.lib.APIClientHelper;
+import com.auth0.lib.RequestProcessor;
+import com.auth0.lib.RequestProcessorFactory;
+import com.auth0.lib.TokensCallback;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;

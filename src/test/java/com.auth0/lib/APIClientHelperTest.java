@@ -3,6 +3,8 @@ package com.auth0.lib;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.auth.UserInfo;
+import com.auth0.lib.APIClientHelper;
+import com.auth0.lib.Tokens;
 import com.auth0.net.AuthRequest;
 import com.auth0.net.Request;
 import org.junit.Before;

@@ -1,6 +1,7 @@
 package com.auth0.lib;
 
 import com.auth0.exception.Auth0Exception;
+import com.auth0.lib.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
