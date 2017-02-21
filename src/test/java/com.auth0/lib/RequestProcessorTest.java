@@ -1,7 +1,6 @@
 package com.auth0.lib;
 
 import com.auth0.exception.Auth0Exception;
-import com.auth0.lib.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -80,7 +79,7 @@ public class RequestProcessorTest {
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
         HttpServletRequest req = getRequest(params);
-        ServletUtils.setSessionState(req, "9999");
+        SessionUtils.setSessionState(req, "9999");
 
         RequestProcessor handler = new RequestProcessor(clientHelper, callback);
         handler.process(req, res);
@@ -103,7 +102,7 @@ public class RequestProcessorTest {
         params.put("access_token", "theAccessToken");
         params.put("id_token", "theIdToken");
         HttpServletRequest req = getRequest(params);
-        ServletUtils.setSessionState(req, "1234");
+        SessionUtils.setSessionState(req, "1234");
 
         RequestProcessor handler = new RequestProcessor(clientHelper, callback);
         handler.process(req, res);
@@ -116,8 +115,8 @@ public class RequestProcessorTest {
         params.put("access_token", "theAccessToken");
         params.put("id_token", "theIdToken");
         HttpServletRequest req = getRequest(params);
-        ServletUtils.setSessionState(req, "1234");
-        ServletUtils.setSessionNonce(req, "nnnccc");
+        SessionUtils.setSessionState(req, "1234");
+        SessionUtils.setSessionNonce(req, "nnnccc");
 
         when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn("auth0|user123");
 
@@ -128,7 +127,7 @@ public class RequestProcessorTest {
         verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
         assertThat(tokenCaptor.getValue().getAccessToken(), is("theAccessToken"));
         assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
-        assertThat(ServletUtils.getSessionUserId(req), is("auth0|user123"));
+        assertThat(SessionUtils.getSessionUserId(req), is("auth0|user123"));
     }
 
     @Test
@@ -138,7 +137,7 @@ public class RequestProcessorTest {
         params.put("access_token", "theAccessToken");
         params.put("id_token", "theIdToken");
         HttpServletRequest req = getRequest(params);
-        ServletUtils.setSessionState(req, "1234");
+        SessionUtils.setSessionState(req, "1234");
 
         when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn(null);
 
@@ -150,7 +149,7 @@ public class RequestProcessorTest {
         assertThat(exceptionCaptor.getValue(), is(notNullValue()));
         assertThat(exceptionCaptor.getValue(), is(instanceOf(IllegalStateException.class)));
         assertThat(exceptionCaptor.getValue().getMessage(), is("Couldn't obtain the User Id."));
-        assertThat(ServletUtils.getSessionUserId(req), is(nullValue()));
+        assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
     }
 
 
@@ -165,7 +164,7 @@ public class RequestProcessorTest {
         params.put("access_token", "theAccessToken");
         params.put("id_token", "theIdToken");
         HttpServletRequest req = getRequest(params);
-        ServletUtils.setSessionState(req, "1234");
+        SessionUtils.setSessionState(req, "1234");
         Tokens betterTokens = mock(Tokens.class);
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theAccessToken")).thenReturn("auth0|user123");
@@ -176,7 +175,7 @@ public class RequestProcessorTest {
         verify(clientHelper).fetchUserId("theAccessToken");
 
         verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
-        assertThat(ServletUtils.getSessionUserId(req), is("auth0|user123"));
+        assertThat(SessionUtils.getSessionUserId(req), is("auth0|user123"));
         assertThat(tokenCaptor.getValue().getAccessToken(), is("theAccessToken"));
         assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
     }
@@ -189,7 +188,7 @@ public class RequestProcessorTest {
         params.put("access_token", "theAccessToken");
         params.put("id_token", "theIdToken");
         HttpServletRequest req = getRequest(params);
-        ServletUtils.setSessionState(req, "1234");
+        SessionUtils.setSessionState(req, "1234");
         Tokens betterTokens = mock(Tokens.class);
         when(betterTokens.getAccessToken()).thenReturn("theBestAccessToken");
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
@@ -201,7 +200,7 @@ public class RequestProcessorTest {
         verify(clientHelper).fetchUserId("theBestAccessToken");
 
         verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
-        assertThat(ServletUtils.getSessionUserId(req), is("auth0|user123"));
+        assertThat(SessionUtils.getSessionUserId(req), is("auth0|user123"));
         assertThat(tokenCaptor.getValue().getAccessToken(), is("theBestAccessToken"));
         assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
     }
@@ -215,7 +214,7 @@ public class RequestProcessorTest {
         params.put("access_token", "theAccessToken");
         params.put("id_token", "theIdToken");
         HttpServletRequest req = getRequest(params);
-        ServletUtils.setSessionState(req, "1234");
+        SessionUtils.setSessionState(req, "1234");
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenThrow(Auth0Exception.class);
 
         RequestProcessor handler = new RequestProcessor(clientHelper, callback);
@@ -225,7 +224,7 @@ public class RequestProcessorTest {
         verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
         assertThat(exceptionCaptor.getValue(), is(notNullValue()));
         assertThat(exceptionCaptor.getValue(), is(instanceOf(Auth0Exception.class)));
-        assertThat(ServletUtils.getSessionUserId(req), is(nullValue()));
+        assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
     }
 
     @Test
@@ -236,7 +235,7 @@ public class RequestProcessorTest {
         params.put("access_token", "theAccessToken");
         params.put("id_token", "theIdToken");
         HttpServletRequest req = getRequest(params);
-        ServletUtils.setSessionState(req, "1234");
+        SessionUtils.setSessionState(req, "1234");
         Tokens betterTokens = mock(Tokens.class);
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theAccessToken")).thenThrow(Auth0Exception.class);
@@ -248,7 +247,7 @@ public class RequestProcessorTest {
         verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
         assertThat(exceptionCaptor.getValue(), is(notNullValue()));
         assertThat(exceptionCaptor.getValue(), is(instanceOf(Auth0Exception.class)));
-        assertThat(ServletUtils.getSessionUserId(req), is(nullValue()));
+        assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
     }
 
     @Test
@@ -259,7 +258,7 @@ public class RequestProcessorTest {
         params.put("access_token", "theAccessToken");
         params.put("id_token", "theIdToken");
         HttpServletRequest req = getRequest(params);
-        ServletUtils.setSessionState(req, "1234");
+        SessionUtils.setSessionState(req, "1234");
         Tokens betterTokens = mock(Tokens.class);
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theAccessToken")).thenReturn(null);
@@ -272,7 +271,7 @@ public class RequestProcessorTest {
         assertThat(exceptionCaptor.getValue(), is(notNullValue()));
         assertThat(exceptionCaptor.getValue(), is(instanceOf(IllegalStateException.class)));
         assertThat(exceptionCaptor.getValue().getMessage(), is("Couldn't obtain the User Id."));
-        assertThat(ServletUtils.getSessionUserId(req), is(nullValue()));
+        assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
     }
 
 

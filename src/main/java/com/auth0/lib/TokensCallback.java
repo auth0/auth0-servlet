@@ -10,7 +10,7 @@ import java.io.IOException;
 public interface TokensCallback {
 
     /**
-     * The Auth0 authentication succeeded. The User Id is available in the session by calling {@link ServletUtils#getSessionUserId(HttpServletRequest)}.
+     * The Auth0 authentication succeeded. The User Id is available in the session by calling {@link SessionUtils#getSessionUserId(HttpServletRequest)}.
      *
      * @param req    the request.
      * @param res    the response.

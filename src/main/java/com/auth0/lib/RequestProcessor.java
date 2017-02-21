@@ -58,7 +58,7 @@ public class RequestProcessor {
         if (authorizationCode == null && verifier == null) {
             throw new IllegalStateException("Implicit Grant not allowed.");
         } else if (verifier != null) {
-            String expectedNonce = ServletUtils.removeSessionNonce(req);
+            String expectedNonce = SessionUtils.removeSessionNonce(req);
             userId = verifier.verifyNonce(tokens.getIdToken(), expectedNonce);
         } else {
             String redirectUri = req.getRequestURL().toString();
@@ -77,7 +77,7 @@ public class RequestProcessor {
             return;
         }
 
-        ServletUtils.setSessionUserId(req, userId);
+        SessionUtils.setSessionUserId(req, userId);
         callback.onSuccess(req, res, tokens);
     }
 
@@ -120,7 +120,7 @@ public class RequestProcessor {
      */
     private boolean hasValidState(HttpServletRequest req) {
         String stateFromRequest = req.getParameter("state");
-        return ServletUtils.checkSessionState(req, stateFromRequest);
+        return SessionUtils.checkSessionState(req, stateFromRequest);
     }
 
     /**

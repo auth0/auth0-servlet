@@ -1,13 +1,13 @@
 package com.auth0;
 
-import com.auth0.lib.ServletUtils;
+import com.auth0.lib.SessionUtils;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static com.auth0.lib.ServletUtils.readLocalRequiredParameter;
+import static com.auth0.ConfigUtils.readLocalRequiredParameter;
 
 /**
  * Filter class to check if a valid session exists. This will be true if the User Id is present.
@@ -50,7 +50,7 @@ public class Auth0Filter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain next) throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
-        String userId = ServletUtils.getSessionUserId(req);
+        String userId = SessionUtils.getSessionUserId(req);
         if (userId == null) {
             onReject(res);
             return;

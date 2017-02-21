@@ -1,13 +1,11 @@
 package com.auth0.lib;
 
-import com.auth0.lib.TokenVerifier;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.security.interfaces.RSAPublicKey;
 
-import static com.auth0.lib.ServletUtils.readPublicKeyFromFile;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -80,7 +78,7 @@ public class TokenVerifierTest {
 
     @Test
     public void shouldPassRSVerification() throws Exception {
-        RSAPublicKey key = readPublicKeyFromFile(RS_PUBLIC_KEY);
+        RSAPublicKey key = RequestProcessorFactory.readPublicKeyFromFile(RS_PUBLIC_KEY);
         TokenVerifier verifier = new TokenVerifier(key, "daOgnGsRYhkwu621vf", "https://me.auth0.com/");
         String id = verifier.verifyNonce(RS_JWT, "1234");
 
@@ -89,7 +87,7 @@ public class TokenVerifierTest {
 
     @Test
     public void shouldParseRSDomainUrl() throws Exception {
-        RSAPublicKey key = readPublicKeyFromFile(RS_PUBLIC_KEY);
+        RSAPublicKey key = RequestProcessorFactory.readPublicKeyFromFile(RS_PUBLIC_KEY);
         TokenVerifier verifier = new TokenVerifier(key, "daOgnGsRYhkwu621vf", "me.auth0.com");
         String id = verifier.verifyNonce(RS_JWT, "1234");
 
@@ -99,7 +97,7 @@ public class TokenVerifierTest {
     @Test
     public void shouldFailRSVerificationOnNullToken() throws Exception {
         exception.expect(NullPointerException.class);
-        RSAPublicKey key = readPublicKeyFromFile(RS_PUBLIC_KEY);
+        RSAPublicKey key = RequestProcessorFactory.readPublicKeyFromFile(RS_PUBLIC_KEY);
         TokenVerifier verifier = new TokenVerifier(key, "daOgnGsRYhkwu621vf", "https://me.auth0.com/");
         verifier.verifyNonce(null, "nonce");
     }
@@ -107,14 +105,14 @@ public class TokenVerifierTest {
     @Test
     public void shouldFailRSVerificationOnNullNonce() throws Exception {
         exception.expect(NullPointerException.class);
-        RSAPublicKey key = readPublicKeyFromFile(RS_PUBLIC_KEY);
+        RSAPublicKey key = RequestProcessorFactory.readPublicKeyFromFile(RS_PUBLIC_KEY);
         TokenVerifier verifier = new TokenVerifier(key, "daOgnGsRYhkwu621vf", "https://me.auth0.com/");
         verifier.verifyNonce(RS_JWT, null);
     }
 
     @Test
     public void shouldFailRSVerificationOnInvalidNonce() throws Exception {
-        RSAPublicKey key = readPublicKeyFromFile(RS_PUBLIC_KEY);
+        RSAPublicKey key = RequestProcessorFactory.readPublicKeyFromFile(RS_PUBLIC_KEY);
         TokenVerifier verifier = new TokenVerifier(key, "daOgnGsRYhkwu621vf", "https://me.auth0.com/");
         String id = verifier.verifyNonce(RS_JWT, "nonce");
 
@@ -123,7 +121,7 @@ public class TokenVerifierTest {
 
     @Test
     public void shouldFailRSVerificationOnInvalidAudience() throws Exception {
-        RSAPublicKey key = readPublicKeyFromFile(RS_PUBLIC_KEY);
+        RSAPublicKey key = RequestProcessorFactory.readPublicKeyFromFile(RS_PUBLIC_KEY);
         TokenVerifier verifier = new TokenVerifier(key, "someone-else", "https://me.auth0.com/");
         String id = verifier.verifyNonce(RS_JWT, "1234");
 
@@ -132,7 +130,7 @@ public class TokenVerifierTest {
 
     @Test
     public void shouldFailRSVerificationOnInvalidIssuer() throws Exception {
-        RSAPublicKey key = readPublicKeyFromFile(RS_PUBLIC_KEY);
+        RSAPublicKey key = RequestProcessorFactory.readPublicKeyFromFile(RS_PUBLIC_KEY);
         TokenVerifier verifier = new TokenVerifier(key, "daOgnGsRYhkwu621vf", "https://www.google.com/");
         String id = verifier.verifyNonce(RS_JWT, "1234");
 

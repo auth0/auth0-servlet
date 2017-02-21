@@ -9,8 +9,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
-import static com.auth0.lib.ServletUtils.isFlagEnabled;
-import static com.auth0.lib.ServletUtils.readRequiredParameter;
+import static com.auth0.ConfigUtils.isFlagEnabled;
+import static com.auth0.ConfigUtils.readRequiredParameter;
+
 
 /**
  * Base Auth0 Authenticator class
