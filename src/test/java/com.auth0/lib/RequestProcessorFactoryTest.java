@@ -44,7 +44,7 @@ public class RequestProcessorFactoryTest {
 
     @Test
     public void shouldCreateForImplicitGrantHS() throws Exception {
-        RequestProcessor processor = factory.forImplicitGrantHS(clientHelper, "clientSecret", "clientId", "domain", callback);
+        RequestProcessor processor = factory.forImplicitGrantHS(clientHelper, "clientSecret", "domain", "clientId", callback);
         assertThat(processor, is(notNullValue()));
         assertThat(processor.clientHelper, is(clientHelper));
         assertThat(processor.verifier, is(notNullValue()));
@@ -53,7 +53,7 @@ public class RequestProcessorFactoryTest {
 
     @Test
     public void shouldCreateForImplicitGrantRS() throws Exception {
-        RequestProcessor processor = factory.forImplicitGrantRS(clientHelper, RS_PUBLIC_KEY, "clientId", "domain", callback);
+        RequestProcessor processor = factory.forImplicitGrantRS(clientHelper, RS_PUBLIC_KEY, "domain", "clientId", callback);
         assertThat(processor, is(notNullValue()));
         assertThat(processor.clientHelper, is(clientHelper));
         assertThat(processor.verifier, is(notNullValue()));

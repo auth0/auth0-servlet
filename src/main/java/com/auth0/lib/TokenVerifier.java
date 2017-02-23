@@ -1,5 +1,7 @@
 package com.auth0.lib;
 
+import com.auth0.jwk.JwkException;
+import com.auth0.jwk.JwkProvider;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -8,6 +10,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import org.apache.commons.lang3.Validate;
 
 import java.io.UnsupportedEncodingException;
+import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
 
 /**
@@ -16,7 +19,11 @@ import java.security.interfaces.RSAKey;
 @SuppressWarnings("WeakerAccess")
 class TokenVerifier {
 
-    private final JWTVerifier verifier;
+    private final Algorithm algorithm;
+    private final JwkProvider jwkProvider;
+    private final String audience;
+    private final String issuer;
+    private JWTVerifier verifier;
 
     /**
      * Creates a new instance using the HS256 algorithm and the clientSecret as secret.
@@ -27,30 +34,53 @@ class TokenVerifier {
      * @throws UnsupportedEncodingException if the current environment doesn't support UTF-8 encoding.
      */
     public TokenVerifier(String clientSecret, String clientId, String domain) throws UnsupportedEncodingException {
-        this(Algorithm.HMAC256(clientSecret), clientId, toUrl(domain));
+        Validate.notNull(clientSecret);
+        Validate.notNull(clientId);
+        Validate.notNull(domain);
+
+        this.algorithm = Algorithm.HMAC256(clientSecret);
+        this.jwkProvider = null;
+        this.audience = clientId;
+        this.issuer = toUrl(domain);
     }
 
     /**
      * Creates a new instance using the RS256 algorithm and the RSA key as secret.
      *
-     * @param key      the Auth0 client RS256 certificate to validate the signature with.
-     * @param clientId the Auth0 client id that this token is issued for.
-     * @param domain   the Auth0 domain that issued this token.
+     * @param jwkProvider the JwkProvider of the key to validate the signature with.
+     * @param clientId    the Auth0 client id that this token is issued for.
+     * @param domain      the Auth0 domain that issued this token.
      */
-    public TokenVerifier(RSAKey key, String clientId, String domain) {
-        this(Algorithm.RSA256(key), clientId, toUrl(domain));
+    public TokenVerifier(JwkProvider jwkProvider, String clientId, String domain) {
+        Validate.notNull(jwkProvider);
+        Validate.notNull(clientId);
+        Validate.notNull(domain);
+
+        this.algorithm = null;
+        this.jwkProvider = jwkProvider;
+        this.audience = clientId;
+        this.issuer = toUrl(domain);
     }
 
-    private TokenVerifier(Algorithm algorithm, String audience, String issuer) {
-        Validate.notNull(algorithm);
-        Validate.notNull(audience);
-        Validate.notNull(issuer);
-        verifier = JWT.require(algorithm)
+    private DecodedJWT verifyToken(String idToken) throws JwkException {
+        if (verifier != null) {
+            return verifier.verify(idToken);
+        }
+        if (algorithm != null) {
+            verifier = JWT.require(algorithm)
+                    .withAudience(audience)
+                    .withIssuer(issuer)
+                    .build();
+            return verifier.verify(idToken);
+        }
+        String kid = JWT.decode(idToken).getKeyId();
+        PublicKey publicKey = jwkProvider.get(kid).getPublicKey();
+        return JWT.require(Algorithm.RSA256((RSAKey) publicKey))
                 .withAudience(audience)
                 .withIssuer(issuer)
-                .build();
+                .build()
+                .verify(idToken);
     }
-
 
     /**
      * Verify that the idToken contains a claim 'nonce' with the exact given value.
@@ -65,9 +95,9 @@ class TokenVerifier {
         Validate.notNull(nonce);
 
         try {
-            DecodedJWT jwt = verifier.verify(idToken);
+            DecodedJWT jwt = verifyToken(idToken);
             return nonce.equals(jwt.getClaim("nonce").asString()) ? jwt.getSubject() : null;
-        } catch (JWTVerificationException e) {
+        } catch (JwkException | JWTVerificationException e) {
             return null;
         }
     }

@@ -1,6 +1,6 @@
 package com.auth0;
 
-import com.auth0.lib.Auth0Servlets;
+import com.auth0.lib.Auth0MVC;
 import com.auth0.lib.Tokens;
 import com.auth0.lib.TokensCallback;
 
@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static com.auth0.ConfigUtils.readLocalRequiredParameter;
+import static com.auth0.ConfigUtils.readRequiredParameter;
 
 /**
  * The Servlet endpoint used as the callback handler in the OAuth 2.0 authorization code grant flow.
@@ -20,20 +21,10 @@ import static com.auth0.ConfigUtils.readLocalRequiredParameter;
 @SuppressWarnings("WeakerAccess")
 public class Auth0RedirectServlet extends HttpServlet implements TokensCallback {
 
-    private final Auth0ServletsFactory factory;
     private String redirectOnSuccess;
     private String redirectOnFail;
-    private Auth0Servlets auth0Servlets;
+    private Auth0MVC auth0MVC;
 
-
-    public Auth0RedirectServlet() {
-        this(new Auth0ServletsFactory());
-    }
-
-    //Visible for testing
-    Auth0RedirectServlet(Auth0ServletsFactory factory) {
-        this.factory = factory;
-    }
 
     /**
      * Initialize this servlet with required configuration.
@@ -55,18 +46,25 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
         super.init(config);
         redirectOnSuccess = readLocalRequiredParameter("com.auth0.redirect_on_success", config);
         redirectOnFail = readLocalRequiredParameter("com.auth0.redirect_on_error", config);
-        auth0Servlets = factory.newInstance(config, this);
+
+        String domain = readRequiredParameter("com.auth0.domain", config);
+        String clientId = readRequiredParameter("com.auth0.client_id", config);
+        String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
+        String certificatePath = config.getServletContext().getContextPath() + config.getInitParameter("com.auth0.certificate");
+
+        //TODO: Add example using implicit grant
+        auth0MVC = new Auth0MVC(domain, clientId, this);
     }
 
     @Override
     public void destroy() {
         super.destroy();
-        auth0Servlets = null;
+        auth0MVC = null;
     }
 
     //Visible for testing
-    Auth0Servlets getAuth0Servlets() {
-        return auth0Servlets;
+    Auth0MVC getAuth0MVC() {
+        return auth0MVC;
     }
 
     /**
@@ -79,7 +77,7 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      */
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        auth0Servlets.process(req, res);
+        auth0MVC.handle(req, res);
     }
 
 
@@ -94,7 +92,7 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      */
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        auth0Servlets.process(req, res);
+        auth0MVC.handle(req, res);
     }
 
     @Override

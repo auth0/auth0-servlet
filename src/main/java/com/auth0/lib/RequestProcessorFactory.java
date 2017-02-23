@@ -1,5 +1,6 @@
 package com.auth0.lib;
 
+import com.auth0.jwk.JwkProvider;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.util.io.pem.PemReader;
 
@@ -25,13 +26,13 @@ class RequestProcessorFactory {
         return new RequestProcessor(clientHelper, callback);
     }
 
-    RequestProcessor forImplicitGrantHS(APIClientHelper clientHelper, String clientSecret, String clientId, String domain, TokensCallback callback) throws UnsupportedEncodingException {
+    RequestProcessor forImplicitGrantHS(APIClientHelper clientHelper, String clientSecret, String domain, String clientId, TokensCallback callback) throws UnsupportedEncodingException {
         TokenVerifier verifier = new TokenVerifier(clientSecret, clientId, domain);
         return new RequestProcessor(clientHelper, verifier, callback);
     }
 
-    RequestProcessor forImplicitGrantRS(APIClientHelper clientHelper, String certificatePath, String clientId, String domain, TokensCallback callback) throws IOException {
-        TokenVerifier verifier = new TokenVerifier(readPublicKeyFromFile(certificatePath), clientId, domain);
+    RequestProcessor forImplicitGrantRS(APIClientHelper clientHelper, JwkProvider jwkProvider, String domain, String clientId, TokensCallback callback) throws IOException {
+        TokenVerifier verifier = new TokenVerifier(jwkProvider, clientId, domain);
         return new RequestProcessor(clientHelper, verifier, callback);
     }
 

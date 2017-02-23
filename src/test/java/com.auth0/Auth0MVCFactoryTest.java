@@ -1,6 +1,6 @@
 package com.auth0;
 
-import com.auth0.lib.Auth0Servlets;
+import com.auth0.lib.Auth0MVC;
 import com.auth0.lib.TokensCallback;
 import org.junit.Test;
 
@@ -12,13 +12,13 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class Auth0ServletsFactoryTest {
+public class Auth0MVCFactoryTest {
 
     @Test
     public void shouldCreateInstance() throws Exception {
         Auth0ServletsFactory factory = new Auth0ServletsFactory();
         TokensCallback callback = mock(TokensCallback.class);
-        Auth0Servlets instance = factory.newInstance(getRequiredConfig(), callback);
+        Auth0MVC instance = factory.newInstance(getRequiredConfig(), callback);
 
         assertThat(instance, is(notNullValue()));
     }

@@ -1,6 +1,6 @@
 package com.auth0;
 
-import com.auth0.lib.Auth0Servlets;
+import com.auth0.lib.Auth0MVC;
 import com.auth0.lib.Tokens;
 import com.auth0.lib.TokensCallback;
 import org.junit.Before;
@@ -32,14 +32,14 @@ public class Auth0RedirectServletTest {
     @Mock
     private Auth0ServletsFactory factory;
     @Mock
-    private Auth0Servlets auth0Servlets;
+    private Auth0MVC auth0MVC;
     private MockHttpServletRequest req;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         this.req = new MockHttpServletRequest();
-        when(factory.newInstance(ArgumentMatchers.any(ServletConfig.class), ArgumentMatchers.any(TokensCallback.class))).thenReturn(auth0Servlets);
+        when(factory.newInstance(ArgumentMatchers.any(ServletConfig.class), ArgumentMatchers.any(TokensCallback.class))).thenReturn(auth0MVC);
     }
 
     @Test
@@ -99,7 +99,7 @@ public class Auth0RedirectServletTest {
         Auth0RedirectServlet servlet = new Auth0RedirectServlet();
         ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "domain", "/secure/home", "/login");
         servlet.init(config);
-        assertThat(servlet.getAuth0Servlets(), is(notNullValue()));
+        assertThat(servlet.getAuth0MVC(), is(notNullValue()));
     }
 
     @Test
@@ -108,7 +108,7 @@ public class Auth0RedirectServletTest {
         ServletConfig config = configureAuth0Servlet("clientId", "clientSecret", "domain", "/secure/home", "/login");
         servlet.init(config);
         servlet.destroy();
-        assertThat(servlet.getAuth0Servlets(), is(nullValue()));
+        assertThat(servlet.getAuth0MVC(), is(nullValue()));
     }
 
     @Test
@@ -117,7 +117,7 @@ public class Auth0RedirectServletTest {
         servlet.init(configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com", "/secure/home", "/login"));
         servlet.doGet(req, res);
 
-        verify(auth0Servlets).process(req, res);
+        verify(auth0MVC).handle(req, res);
     }
 
     @Test
@@ -126,7 +126,7 @@ public class Auth0RedirectServletTest {
         servlet.init(configureAuth0Servlet("clientId", "clientSecret", "me.auth0.com", "/secure/home", "/login"));
         servlet.doPost(req, res);
 
-        verify(auth0Servlets).process(req, res);
+        verify(auth0MVC).handle(req, res);
     }
 
     @Test
