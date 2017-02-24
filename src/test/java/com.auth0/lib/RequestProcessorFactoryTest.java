@@ -1,5 +1,6 @@
 package com.auth0.lib;
 
+import com.auth0.jwk.JwkProvider;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -12,19 +13,18 @@ import java.security.interfaces.RSAPublicKey;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class RequestProcessorFactoryTest {
 
     private static final String RS_CERTIFICATE = "src/test/resources/certificate.pem";
-    private static final String RS_PUBLIC_KEY = "src/test/resources/public_key.pem";
+    private static final String RS_PUBLIC_KEY = "src/test/resources/public.pem";
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @Mock
     private APIClientHelper clientHelper;
-    @Mock
-    private TokensCallback callback;
     private RequestProcessorFactory factory;
 
     @Before
@@ -35,29 +35,27 @@ public class RequestProcessorFactoryTest {
 
     @Test
     public void shouldCreateForCodeGrant() throws Exception {
-        RequestProcessor processor = factory.forCodeGrant(clientHelper, callback);
+        RequestProcessor processor = factory.forCodeGrant(clientHelper);
         assertThat(processor, is(notNullValue()));
         assertThat(processor.clientHelper, is(clientHelper));
         assertThat(processor.verifier, is(nullValue()));
-        assertThat(processor.callback, is(callback));
     }
 
     @Test
     public void shouldCreateForImplicitGrantHS() throws Exception {
-        RequestProcessor processor = factory.forImplicitGrantHS(clientHelper, "clientSecret", "domain", "clientId", callback);
+        RequestProcessor processor = factory.forImplicitGrantHS(clientHelper, "clientSecret", "domain", "clientId");
         assertThat(processor, is(notNullValue()));
         assertThat(processor.clientHelper, is(clientHelper));
         assertThat(processor.verifier, is(notNullValue()));
-        assertThat(processor.callback, is(callback));
     }
 
     @Test
     public void shouldCreateForImplicitGrantRS() throws Exception {
-        RequestProcessor processor = factory.forImplicitGrantRS(clientHelper, RS_PUBLIC_KEY, "domain", "clientId", callback);
+        JwkProvider jwkProvider = mock(JwkProvider.class);
+        RequestProcessor processor = factory.forImplicitGrantRS(clientHelper, jwkProvider, "domain", "clientId");
         assertThat(processor, is(notNullValue()));
         assertThat(processor.clientHelper, is(clientHelper));
         assertThat(processor.verifier, is(notNullValue()));
-        assertThat(processor.callback, is(callback));
     }
 
     @Test

@@ -4,7 +4,6 @@ import com.auth0.client.auth.AuthAPI;
 import com.auth0.jwk.JwkProvider;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
@@ -15,24 +14,22 @@ import java.io.UnsupportedEncodingException;
 @SuppressWarnings("WeakerAccess")
 public class Auth0MVC {
     private final RequestProcessor requestProcessor;
-    private final TokensCallback callback;
-    private final boolean useImplicitGrant;
 
     /**
      * Create a new instance that will handle Code Grant flows using Code Exchange for the Token verification.
      *
      * @param domain   the Auth0 domain
      * @param clientId the Auth0 client id
-     * @param callback the callback to notify on success or failure.
      * @throws IOException if the
      */
-    public Auth0MVC(String domain, String clientId, TokensCallback callback) {
-        //useImplicitGrant
-        AuthAPI authAPI = new AuthAPI(domain, clientId, "");
+    public static Auth0MVC forCodeGrant(String domain, String clientId, String clientSecret) {
+        return forCodeGrant(domain, clientId, clientSecret, new RequestProcessorFactory());
+    }
+
+    static Auth0MVC forCodeGrant(String domain, String clientId, String clientSecret, RequestProcessorFactory factory) {
+        AuthAPI authAPI = new AuthAPI(domain, clientId, clientSecret);
         APIClientHelper helper = new APIClientHelper(authAPI);
-        this.requestProcessor = new RequestProcessorFactory().forCodeGrant(helper, callback);
-        this.callback = callback;
-        this.useImplicitGrant = false;
+        return new Auth0MVC(factory.forCodeGrant(helper));
     }
 
     /**
@@ -41,41 +38,46 @@ public class Auth0MVC {
      * @param domain       the Auth0 domain
      * @param clientId     the Auth0 client id
      * @param clientSecret the Auth0 client secret to verify the token signature with.
-     * @param callback     the callback to notify on success or failure.
-     * @throws IOException if the
      */
-    public Auth0MVC(String domain, String clientId, String clientSecret, TokensCallback callback) throws IllegalStateException {
-        //useImplicitGrant - HS256
+    public static Auth0MVC forImplicitGrant(String domain, String clientId, String clientSecret) throws UnsupportedEncodingException {
+        return forImplicitGrant(domain, clientId, clientSecret, new RequestProcessorFactory());
+    }
+
+    static Auth0MVC forImplicitGrant(String domain, String clientId, String clientSecret, RequestProcessorFactory factory) throws UnsupportedEncodingException {
         AuthAPI authAPI = new AuthAPI(domain, clientId, clientSecret);
         APIClientHelper helper = new APIClientHelper(authAPI);
         try {
-            this.requestProcessor = new RequestProcessorFactory().forImplicitGrantHS(helper, clientSecret, domain, clientId, callback);
+            RequestProcessor requestProcessor = factory.forImplicitGrantHS(helper, clientSecret, domain, clientId);
+            return new Auth0MVC(requestProcessor);
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException("Couldn't create RequestProcessor for HS256 Algorithm.", e);
         }
-        this.callback = callback;
-        this.useImplicitGrant = true;
     }
 
     /**
      * Create a new instance that will handle Implicit Grant flows using RS256 algorithm for the Token verification.
      *
-     * @param domain         the Auth0 domain
-     * @param clientId       the Auth0 client id
+     * @param domain      the Auth0 domain
+     * @param clientId    the Auth0 client id
      * @param jwkProvider the provider of the JWK to verify the token signature with.
-     * @param callback       the callback to notify on success or failure.
-     * @throws IOException if the
      */
-    public Auth0MVC(String domain, String clientId, JwkProvider jwkProvider, TokensCallback callback) throws IllegalStateException {
+    public static Auth0MVC forImplicitGrant(String domain, String clientId, JwkProvider jwkProvider) throws UnsupportedEncodingException {
+        return forImplicitGrant(domain, clientId, jwkProvider, new RequestProcessorFactory());
+    }
+
+    static Auth0MVC forImplicitGrant(String domain, String clientId, JwkProvider jwkProvider, RequestProcessorFactory factory) throws UnsupportedEncodingException {
         AuthAPI authAPI = new AuthAPI(domain, clientId, "");
         APIClientHelper helper = new APIClientHelper(authAPI);
         try {
-            this.requestProcessor = new RequestProcessorFactory().forImplicitGrantRS(helper, jwkProvider, domain, clientId, callback);
+            RequestProcessor requestProcessor = factory.forImplicitGrantRS(helper, jwkProvider, domain, clientId);
+            return new Auth0MVC(requestProcessor);
         } catch (IOException e) {
             throw new IllegalStateException("Couldn't create RequestProcessor for RS256 Algorithm.", e);
         }
-        this.callback = callback;
-        this.useImplicitGrant = true;
+    }
+
+    private Auth0MVC(RequestProcessor requestProcessor) {
+        this.requestProcessor = requestProcessor;
     }
 
     /**
@@ -88,16 +90,11 @@ public class Auth0MVC {
      * 5). Clearing the stored state value.
      * 6). Handling success and any failure outcomes.
      * <p>
-     * If the HTTP method is not allowed by the Servlet configuration, {@link TokensCallback#onFailure(HttpServletRequest, HttpServletResponse, Throwable)} will be called with a {@link IllegalArgumentException}.
      *
-     * @throws IOException
+     * @return the Tokens obtained after the user authentication.
+     * @throws IllegalStateException if something when wrong while parsing the request parameters
      */
-    public void handle(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        if (!req.getMethod().equals("POST") && useImplicitGrant) {
-            IllegalStateException e = new IllegalStateException("Implicit Grant can only be used with Http POST method");
-            callback.onFailure(req, res, e);
-            return;
-        }
-        requestProcessor.process(req, res);
+    public Tokens handle(HttpServletRequest req) throws IllegalStateException {
+        return requestProcessor.process(req);
     }
 }

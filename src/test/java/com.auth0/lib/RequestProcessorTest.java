@@ -5,14 +5,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,17 +22,9 @@ public class RequestProcessorTest {
     @Rule
     public ExpectedException exception = ExpectedException.none();
     @Mock
-    private TokensCallback callback;
-    @Mock
     private APIClientHelper clientHelper;
     @Mock
-    private HttpServletResponse res;
-    @Mock
     private TokenVerifier verifier;
-    @Captor
-    private ArgumentCaptor<Tokens> tokenCaptor;
-    @Captor
-    private ArgumentCaptor<Throwable> exceptionCaptor;
 
     @Before
     public void setUp() throws Exception {
@@ -45,49 +34,39 @@ public class RequestProcessorTest {
     @Test
     public void shouldThrowOnMissingAPIClientHelper() throws Exception {
         exception.expect(NullPointerException.class);
-        new RequestProcessor(null, null, callback);
+        new RequestProcessor(null, null);
     }
 
     @Test
     public void shouldNotThrowOnMissingTokenVerifier() throws Exception {
-        new RequestProcessor(clientHelper, null, callback);
+        new RequestProcessor(clientHelper, null);
     }
 
     @Test
-    public void shouldThrowOnMissingCallback() throws Exception {
-        exception.expect(NullPointerException.class);
-        new RequestProcessor(clientHelper, null, null);
-    }
+    public void shouldThrowIfRequestHasError() throws Exception {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("Invalid state or error");
 
-    @Test
-    public void shouldCallOnFailureIfRequestHasError() throws Exception {
         Map<String, Object> params = new HashMap<>();
         params.put("error", "something happened");
         HttpServletRequest req = getRequest(params);
 
-        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
-        handler.process(req, res);
-
-        verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
-        assertThat(exceptionCaptor.getValue(), is(notNullValue()));
-        assertThat(exceptionCaptor.getValue(), is(instanceOf(IllegalStateException.class)));
-        assertThat(exceptionCaptor.getValue().getMessage(), is("Invalid state or error"));
+        RequestProcessor handler = new RequestProcessor(clientHelper);
+        handler.process(req);
     }
 
     @Test
-    public void shouldCallOnFailureIfRequestHasInvalidState() throws Exception {
+    public void shouldThrowIfRequestHasInvalidState() throws Exception {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("Invalid state or error");
+
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
         HttpServletRequest req = getRequest(params);
         SessionUtils.setSessionState(req, "9999");
 
-        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
-        handler.process(req, res);
-
-        verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
-        assertThat(exceptionCaptor.getValue(), is(notNullValue()));
-        assertThat(exceptionCaptor.getValue(), is(instanceOf(IllegalStateException.class)));
-        assertThat(exceptionCaptor.getValue().getMessage(), is("Invalid state or error"));
+        RequestProcessor handler = new RequestProcessor(clientHelper);
+        handler.process(req);
     }
 
     //Implicit Grant
@@ -104,8 +83,8 @@ public class RequestProcessorTest {
         HttpServletRequest req = getRequest(params);
         SessionUtils.setSessionState(req, "1234");
 
-        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
-        handler.process(req, res);
+        RequestProcessor handler = new RequestProcessor(clientHelper);
+        handler.process(req);
     }
 
     @Test
@@ -120,18 +99,21 @@ public class RequestProcessorTest {
 
         when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn("auth0|user123");
 
-        RequestProcessor handler = new RequestProcessor(clientHelper, verifier, callback);
-        handler.process(req, res);
+        RequestProcessor handler = new RequestProcessor(clientHelper, verifier);
+        Tokens tokens = handler.process(req);
 
         verify(clientHelper, never()).fetchUserId(anyString());
-        verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
-        assertThat(tokenCaptor.getValue().getAccessToken(), is("theAccessToken"));
-        assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
+        assertThat(tokens, is(notNullValue()));
+        assertThat(tokens.getAccessToken(), is("theAccessToken"));
+        assertThat(tokens.getIdToken(), is("theIdToken"));
         assertThat(SessionUtils.getSessionUserId(req), is("auth0|user123"));
     }
 
     @Test
-    public void shouldFailToVerifyIdTokenOnImplicitGrant() throws Exception {
+    public void shouldThrowOnFailToVerifyIdTokenOnImplicitGrant() throws Exception {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("Couldn't obtain the User Id.");
+
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
         params.put("access_token", "theAccessToken");
@@ -141,14 +123,10 @@ public class RequestProcessorTest {
 
         when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn(null);
 
-        RequestProcessor handler = new RequestProcessor(clientHelper, verifier, callback);
-        handler.process(req, res);
+        RequestProcessor handler = new RequestProcessor(clientHelper, verifier);
+        handler.process(req);
 
         verify(clientHelper, never()).fetchUserId(anyString());
-        verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
-        assertThat(exceptionCaptor.getValue(), is(notNullValue()));
-        assertThat(exceptionCaptor.getValue(), is(instanceOf(IllegalStateException.class)));
-        assertThat(exceptionCaptor.getValue().getMessage(), is("Couldn't obtain the User Id."));
         assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
     }
 
@@ -169,15 +147,15 @@ public class RequestProcessorTest {
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theAccessToken")).thenReturn("auth0|user123");
 
-        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
-        handler.process(req, res);
+        RequestProcessor handler = new RequestProcessor(clientHelper);
+        Tokens tokens = handler.process(req);
         verify(clientHelper).exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback");
         verify(clientHelper).fetchUserId("theAccessToken");
 
-        verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
         assertThat(SessionUtils.getSessionUserId(req), is("auth0|user123"));
-        assertThat(tokenCaptor.getValue().getAccessToken(), is("theAccessToken"));
-        assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
+        assertThat(tokens, is(notNullValue()));
+        assertThat(tokens.getAccessToken(), is("theAccessToken"));
+        assertThat(tokens.getIdToken(), is("theIdToken"));
     }
 
     @Test
@@ -194,20 +172,22 @@ public class RequestProcessorTest {
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theBestAccessToken")).thenReturn("auth0|user123");
 
-        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
-        handler.process(req, res);
+        RequestProcessor handler = new RequestProcessor(clientHelper);
+        Tokens tokens = handler.process(req);
         verify(clientHelper).exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback");
         verify(clientHelper).fetchUserId("theBestAccessToken");
 
-        verify(callback).onSuccess(eq(req), eq(res), tokenCaptor.capture());
         assertThat(SessionUtils.getSessionUserId(req), is("auth0|user123"));
-        assertThat(tokenCaptor.getValue().getAccessToken(), is("theBestAccessToken"));
-        assertThat(tokenCaptor.getValue().getIdToken(), is("theIdToken"));
+        assertThat(tokens, is(notNullValue()));
+        assertThat(tokens.getAccessToken(), is("theBestAccessToken"));
+        assertThat(tokens.getIdToken(), is("theIdToken"));
     }
-
 
     @Test
     public void shouldThrowOnExchangeTheAuthorizationCodeOnCodeGrant() throws Exception {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("Couldn't exchange the code for tokens");
+
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");
         params.put("state", "1234");
@@ -217,18 +197,17 @@ public class RequestProcessorTest {
         SessionUtils.setSessionState(req, "1234");
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenThrow(Auth0Exception.class);
 
-        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
-        handler.process(req, res);
+        RequestProcessor handler = new RequestProcessor(clientHelper);
+        handler.process(req);
         verify(clientHelper).exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback");
-
-        verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
-        assertThat(exceptionCaptor.getValue(), is(notNullValue()));
-        assertThat(exceptionCaptor.getValue(), is(instanceOf(Auth0Exception.class)));
         assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
     }
 
     @Test
     public void shouldThrowOnFetchTheUserIdOnCodeGrant() throws Exception {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("Couldn't exchange the code for tokens");
+
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");
         params.put("state", "1234");
@@ -240,18 +219,16 @@ public class RequestProcessorTest {
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theAccessToken")).thenThrow(Auth0Exception.class);
 
-        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
-        handler.process(req, res);
+        RequestProcessor handler = new RequestProcessor(clientHelper);
+        handler.process(req);
         verify(clientHelper).fetchUserId("theAccessToken");
-
-        verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
-        assertThat(exceptionCaptor.getValue(), is(notNullValue()));
-        assertThat(exceptionCaptor.getValue(), is(instanceOf(Auth0Exception.class)));
         assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
     }
 
     @Test
     public void shouldFailToGetTheUserIdOnCodeGrant() throws Exception {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("Couldn't obtain the User Id.");
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");
         params.put("state", "1234");
@@ -263,14 +240,10 @@ public class RequestProcessorTest {
         when(clientHelper.exchangeCodeForTokens("abc123", "https://me.auth0.com:80/callback")).thenReturn(betterTokens);
         when(clientHelper.fetchUserId("theAccessToken")).thenReturn(null);
 
-        RequestProcessor handler = new RequestProcessor(clientHelper, callback);
-        handler.process(req, res);
+        RequestProcessor handler = new RequestProcessor(clientHelper);
+        handler.process(req);
         verify(clientHelper).fetchUserId("theAccessToken");
 
-        verify(callback).onFailure(eq(req), eq(res), exceptionCaptor.capture());
-        assertThat(exceptionCaptor.getValue(), is(notNullValue()));
-        assertThat(exceptionCaptor.getValue(), is(instanceOf(IllegalStateException.class)));
-        assertThat(exceptionCaptor.getValue().getMessage(), is("Couldn't obtain the User Id."));
         assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
     }
 

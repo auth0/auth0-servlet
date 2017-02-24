@@ -22,18 +22,18 @@ class RequestProcessorFactory {
 
     private static final String RSA_CERTIFICATE_HEADER = "-----BEGIN CERTIFICATE-----";
 
-    RequestProcessor forCodeGrant(APIClientHelper clientHelper, TokensCallback callback) {
-        return new RequestProcessor(clientHelper, callback);
+    RequestProcessor forCodeGrant(APIClientHelper clientHelper) {
+        return new RequestProcessor(clientHelper);
     }
 
-    RequestProcessor forImplicitGrantHS(APIClientHelper clientHelper, String clientSecret, String domain, String clientId, TokensCallback callback) throws UnsupportedEncodingException {
+    RequestProcessor forImplicitGrantHS(APIClientHelper clientHelper, String clientSecret, String domain, String clientId) throws UnsupportedEncodingException {
         TokenVerifier verifier = new TokenVerifier(clientSecret, clientId, domain);
-        return new RequestProcessor(clientHelper, verifier, callback);
+        return new RequestProcessor(clientHelper, verifier);
     }
 
-    RequestProcessor forImplicitGrantRS(APIClientHelper clientHelper, JwkProvider jwkProvider, String domain, String clientId, TokensCallback callback) throws IOException {
+    RequestProcessor forImplicitGrantRS(APIClientHelper clientHelper, JwkProvider jwkProvider, String domain, String clientId) throws IOException {
         TokenVerifier verifier = new TokenVerifier(jwkProvider, clientId, domain);
-        return new RequestProcessor(clientHelper, verifier, callback);
+        return new RequestProcessor(clientHelper, verifier);
     }
 
 

@@ -4,32 +4,26 @@ import com.auth0.exception.Auth0Exception;
 import org.apache.commons.lang3.Validate;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 /**
  * Main class to handle the Authorize Redirect request.
  * It will try to parse the parameters looking for tokens or an authorization code to perform a Code Exchange against the Auth0 servers.
  * When the tokens are obtained, it will request the user id associated to them and save it in the {@link javax.servlet.http.HttpSession}.
  */
-@SuppressWarnings("WeakerAccess")
-public class RequestProcessor {
+class RequestProcessor {
 
     //Visible for testing
     final APIClientHelper clientHelper;
-    final TokensCallback callback;
     final TokenVerifier verifier;
 
-    RequestProcessor(APIClientHelper clientHelper, TokenVerifier verifier, TokensCallback callback) {
+    RequestProcessor(APIClientHelper clientHelper, TokenVerifier verifier) {
         Validate.notNull(clientHelper);
-        Validate.notNull(callback);
         this.clientHelper = clientHelper;
         this.verifier = verifier;
-        this.callback = callback;
     }
 
-    RequestProcessor(APIClientHelper clientHelper, TokensCallback callback) {
-        this(clientHelper, null, callback);
+    RequestProcessor(APIClientHelper clientHelper) {
+        this(clientHelper, null);
     }
 
     /**
@@ -41,14 +35,11 @@ public class RequestProcessor {
      * 4). Storing both tokens and user information into session storage.
      * 5). Clearing the stored state value.
      * 6). Handling success and any failure outcomes.
-     *
-     * @throws IOException
      */
-    void process(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    Tokens process(HttpServletRequest req) throws IllegalStateException {
         boolean validRequest = isValidRequest(req);
         if (!validRequest) {
-            callback.onFailure(req, res, new IllegalStateException("Invalid state or error"));
-            return;
+            throw new IllegalStateException("Invalid state or error");
         }
 
         Tokens tokens = tokensFromRequest(req);
@@ -67,18 +58,16 @@ public class RequestProcessor {
                 tokens = mergeTokens(tokens, latestTokens);
                 userId = fetchUserId(tokens);
             } catch (Auth0Exception e) {
-                callback.onFailure(req, res, e);
-                return;
+                throw new IllegalStateException("Couldn't exchange the code for tokens", e);
             }
         }
 
         if (userId == null) {
-            callback.onFailure(req, res, new IllegalStateException("Couldn't obtain the User Id."));
-            return;
+            throw new IllegalStateException("Couldn't obtain the User Id.");
         }
 
         SessionUtils.setSessionUserId(req, userId);
-        callback.onSuccess(req, res, tokens);
+        return tokens;
     }
 
     /**

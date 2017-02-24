@@ -1,8 +1,6 @@
 package com.auth0;
 
 import com.auth0.lib.Auth0MVC;
-import com.auth0.lib.Tokens;
-import com.auth0.lib.TokensCallback;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -19,7 +17,7 @@ import static com.auth0.ConfigUtils.readRequiredParameter;
  * It will be called with the authorization code after a successful login.
  */
 @SuppressWarnings("WeakerAccess")
-public class Auth0RedirectServlet extends HttpServlet implements TokensCallback {
+public class Auth0RedirectServlet extends HttpServlet {
 
     private String redirectOnSuccess;
     private String redirectOnFail;
@@ -52,19 +50,13 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
         String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
         String certificatePath = config.getServletContext().getContextPath() + config.getInitParameter("com.auth0.certificate");
 
-        //TODO: Add example using implicit grant
-        auth0MVC = new Auth0MVC(domain, clientId, this);
+        auth0MVC = Auth0MVC.forCodeGrant(domain, clientId, clientSecret);
     }
 
     @Override
     public void destroy() {
         super.destroy();
         auth0MVC = null;
-    }
-
-    //Visible for testing
-    Auth0MVC getAuth0MVC() {
-        return auth0MVC;
     }
 
     /**
@@ -77,7 +69,14 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      */
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        auth0MVC.handle(req, res);
+        try {
+            auth0MVC.handle(req);
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            res.sendRedirect(req.getContextPath() + redirectOnFail);
+            return;
+        }
+        res.sendRedirect(req.getContextPath() + redirectOnSuccess);
     }
 
 
@@ -91,18 +90,15 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      * @throws ServletException
      */
     @Override
-    public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        auth0MVC.handle(req, res);
-    }
-
-    @Override
-    public void onSuccess(HttpServletRequest req, HttpServletResponse res, Tokens tokens) throws IOException {
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        try {
+            auth0MVC.handle(req);
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            res.sendRedirect(req.getContextPath() + redirectOnFail);
+            return;
+        }
         res.sendRedirect(req.getContextPath() + redirectOnSuccess);
-    }
-
-    @Override
-    public void onFailure(HttpServletRequest req, HttpServletResponse res, Throwable e) throws IOException {
-        res.sendRedirect(req.getContextPath() + redirectOnFail);
     }
 
 }

@@ -9,11 +9,11 @@ import org.apache.commons.lang3.Validate;
 /**
  * Wrapper for the Auth0 {@link AuthAPI} calls needed by the servlet.
  */
-public class APIClientHelper {
+class APIClientHelper {
 
     private final AuthAPI client;
 
-    public APIClientHelper(AuthAPI client) {
+    APIClientHelper(AuthAPI client) {
         this.client = client;
     }
 
