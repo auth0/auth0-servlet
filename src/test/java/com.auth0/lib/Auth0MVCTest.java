@@ -10,7 +10,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -162,23 +161,11 @@ public class Auth0MVCTest {
 
     @Test
     public void shouldThrowIfSecretCanNotBeParsedWithImplicitGrantHS() throws Exception {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage("Couldn't create RequestProcessor for HS256 Algorithm.");
+        exception.expect(UnsupportedEncodingException.class);
 
         RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
         when(requestProcessorFactory.forImplicitGrantHS(any(APIClientHelper.class), eq("clientSecret"), eq("me.auth0.com"), eq("clientId"))).thenThrow(UnsupportedEncodingException.class);
         Auth0MVC.forImplicitGrant("me.auth0.com", "clientId", "clientSecret", requestProcessorFactory);
-    }
-
-    @Test
-    public void shouldThrowIfCertificateCanNotBeParsedWithImplicitGrantRS() throws Exception {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage("Couldn't create RequestProcessor for RS256 Algorithm.");
-
-        RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
-        JwkProvider jwkProvider = mock(JwkProvider.class);
-        when(requestProcessorFactory.forImplicitGrantRS(any(APIClientHelper.class), eq(jwkProvider), eq("me.auth0.com"), eq("clientId"))).thenThrow(IOException.class);
-        Auth0MVC.forImplicitGrant("me.auth0.com", "clientId", jwkProvider, requestProcessorFactory);
     }
 
 }

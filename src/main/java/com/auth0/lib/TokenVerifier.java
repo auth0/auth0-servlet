@@ -88,18 +88,16 @@ class TokenVerifier {
      *
      * @param idToken the id token to verify
      * @param nonce   the expected nonce value
-     * @return the User Id if verification passes, null otherwise.
+     * @return the User Id contained in the token
+     * @throws JwkException             if the Public Key Certificate couldn't be obtained
+     * @throws JWTVerificationException if the Id Token signature was invalid
      */
-    public String verifyNonce(String idToken, String nonce) {
+    public String verifyNonce(String idToken, String nonce) throws JwkException, JWTVerificationException {
         Validate.notNull(idToken);
         Validate.notNull(nonce);
 
-        try {
-            DecodedJWT jwt = verifyToken(idToken);
-            return nonce.equals(jwt.getClaim("nonce").asString()) ? jwt.getSubject() : null;
-        } catch (JwkException | JWTVerificationException e) {
-            return null;
-        }
+        DecodedJWT jwt = verifyToken(idToken);
+        return nonce.equals(jwt.getClaim("nonce").asString()) ? jwt.getSubject() : null;
     }
 
     private static String toUrl(String domain) {

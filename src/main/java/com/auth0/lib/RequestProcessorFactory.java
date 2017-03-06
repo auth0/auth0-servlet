@@ -31,7 +31,7 @@ class RequestProcessorFactory {
         return new RequestProcessor(clientHelper, verifier);
     }
 
-    RequestProcessor forImplicitGrantRS(APIClientHelper clientHelper, JwkProvider jwkProvider, String domain, String clientId) throws IOException {
+    RequestProcessor forImplicitGrantRS(APIClientHelper clientHelper, JwkProvider jwkProvider, String domain, String clientId) {
         TokenVerifier verifier = new TokenVerifier(jwkProvider, clientId, domain);
         return new RequestProcessor(clientHelper, verifier);
     }

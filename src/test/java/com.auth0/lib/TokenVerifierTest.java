@@ -2,6 +2,7 @@ package com.auth0.lib;
 
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkProvider;
+import com.auth0.jwt.exceptions.InvalidClaimException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -62,19 +63,17 @@ public class TokenVerifierTest {
     }
 
     @Test
-    public void shouldFailHSVerificationOnInvalidAudience() throws Exception {
+    public void shouldThrowHSVerificationOnInvalidAudience() throws Exception {
+        exception.expect(InvalidClaimException.class);
         TokenVerifier verifier = new TokenVerifier("secret", "someone-else", "https://me.auth0.com/");
-        String id = verifier.verifyNonce(HS_JWT, "1234");
-
-        assertThat(id, is(nullValue()));
+        verifier.verifyNonce(HS_JWT, "1234");
     }
 
     @Test
-    public void shouldFailHSVerificationOnInvalidIssuer() throws Exception {
+    public void shouldThrowHSVerificationOnInvalidIssuer() throws Exception {
+        exception.expect(InvalidClaimException.class);
         TokenVerifier verifier = new TokenVerifier("secret", "daOgnGsRYhkwu621vf", "https://www.google.com/");
-        String id = verifier.verifyNonce(HS_JWT, "1234");
-
-        assertThat(id, is(nullValue()));
+        verifier.verifyNonce(HS_JWT, "1234");
     }
 
 
@@ -119,19 +118,17 @@ public class TokenVerifierTest {
     }
 
     @Test
-    public void shouldFailRSVerificationOnInvalidAudience() throws Exception {
+    public void shouldThrowRSVerificationOnInvalidAudience() throws Exception {
+        exception.expect(InvalidClaimException.class);
         TokenVerifier verifier = new TokenVerifier(getRSProvider(), "someone-else", "https://me.auth0.com/");
-        String id = verifier.verifyNonce(RS_JWT, "1234");
-
-        assertThat(id, is(nullValue()));
+        verifier.verifyNonce(RS_JWT, "1234");
     }
 
     @Test
-    public void shouldFailRSVerificationOnInvalidIssuer() throws Exception {
+    public void shouldThrowRSVerificationOnInvalidIssuer() throws Exception {
+        exception.expect(InvalidClaimException.class);
         TokenVerifier verifier = new TokenVerifier(getRSProvider(), "daOgnGsRYhkwu621vf", "https://www.google.com/");
-        String id = verifier.verifyNonce(RS_JWT, "1234");
-
-        assertThat(id, is(nullValue()));
+        verifier.verifyNonce(RS_JWT, "1234");
     }
 
     private JwkProvider getRSProvider() throws Exception {

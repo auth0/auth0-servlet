@@ -44,8 +44,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowIfRequestHasError() throws Exception {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage("Invalid state or error");
+        exception.expect(ProcessorException.class);
+        exception.expectMessage("The request contains an error: something happened");
 
         Map<String, Object> params = new HashMap<>();
         params.put("error", "something happened");
@@ -57,8 +57,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowIfRequestHasInvalidState() throws Exception {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage("Invalid state or error");
+        exception.expect(ProcessorException.class);
+        exception.expectMessage("The request contains an invalid state");
 
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
@@ -73,7 +73,7 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowOnMissingCodeAndImplicitGrantNotAllowed() throws Exception {
-        exception.expect(IllegalStateException.class);
+        exception.expect(ProcessorException.class);
         exception.expectMessage("Implicit Grant not allowed.");
 
         Map<String, Object> params = new HashMap<>();
@@ -111,7 +111,7 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowOnFailToVerifyIdTokenOnImplicitGrant() throws Exception {
-        exception.expect(IllegalStateException.class);
+        exception.expect(ProcessorException.class);
         exception.expectMessage("Couldn't obtain the User Id.");
 
         Map<String, Object> params = new HashMap<>();
@@ -185,8 +185,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowOnExchangeTheAuthorizationCodeOnCodeGrant() throws Exception {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage("Couldn't exchange the code for tokens");
+        exception.expect(ProcessorException.class);
+        exception.expectMessage("Couldn't exchange the Authorization Code for Auth0 Tokens");
 
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");
@@ -205,8 +205,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowOnFetchTheUserIdOnCodeGrant() throws Exception {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage("Couldn't exchange the code for tokens");
+        exception.expect(ProcessorException.class);
+        exception.expectMessage("Couldn't exchange the Authorization Code for Auth0 Tokens");
 
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");
@@ -227,7 +227,7 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldFailToGetTheUserIdOnCodeGrant() throws Exception {
-        exception.expect(IllegalStateException.class);
+        exception.expect(ProcessorException.class);
         exception.expectMessage("Couldn't obtain the User Id.");
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");

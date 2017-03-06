@@ -1,6 +1,7 @@
 package com.auth0;
 
 import com.auth0.lib.Auth0MVC;
+import com.auth0.lib.ProcessorException;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -71,7 +72,7 @@ public class Auth0RedirectServlet extends HttpServlet {
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         try {
             auth0MVC.handle(req);
-        } catch (IllegalStateException e) {
+        } catch (ProcessorException e) {
             e.printStackTrace();
             res.sendRedirect(req.getContextPath() + redirectOnFail);
             return;
@@ -90,10 +91,10 @@ public class Auth0RedirectServlet extends HttpServlet {
      * @throws ServletException
      */
     @Override
-    public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         try {
             auth0MVC.handle(req);
-        } catch (IllegalStateException e) {
+        } catch (ProcessorException e) {
             e.printStackTrace();
             res.sendRedirect(req.getContextPath() + redirectOnFail);
             return;
