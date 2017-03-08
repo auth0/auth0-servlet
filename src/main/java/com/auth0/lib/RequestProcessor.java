@@ -21,14 +21,37 @@ class RequestProcessor {
     final AuthAPI client;
     final TokenVerifier verifier;
 
+    //Implicit
     RequestProcessor(AuthAPI client, TokenVerifier verifier) {
         Validate.notNull(client);
         this.client = client;
         this.verifier = verifier;
     }
 
+    //Code
     RequestProcessor(AuthAPI client) {
         this(client, null);
+    }
+
+    /**
+     * Builds an Auth0 Authorize Url ready to call with the given parameters.
+     *
+     * @param redirectUri  the url to call with the authentication result.
+     * @param responseType the response type to request. It's strongly encouraged to use 'code'.
+     * @param state        a valid state value.
+     * @param nonce        the nonce value that will be used if the response type contains 'id_token'. Can be null.
+     * @return the authorize url ready to call.
+     */
+    String buildAuthorizeUrl(String redirectUri, String responseType, String state, String nonce) {
+        String authorizeUrl = client
+                .authorizeUrl(redirectUri)
+                .withState(state)
+                .build();
+        authorizeUrl = authorizeUrl.replace("response_type=code", "response_type=" + responseType);
+        if (responseType.contains("id_token") && nonce != null) {
+            authorizeUrl = authorizeUrl.concat("&nonce=" + nonce);
+        }
+        return authorizeUrl;
     }
 
     /**

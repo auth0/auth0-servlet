@@ -6,6 +6,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -13,6 +14,11 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.text.IsEmptyString.emptyOrNullString;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -167,6 +173,51 @@ public class Auth0MVCTest {
         RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
         when(requestProcessorFactory.forImplicitGrantHS(any(AuthAPI.class), eq("clientSecret"), eq("me.auth0.com"), eq("clientId"))).thenThrow(UnsupportedEncodingException.class);
         Auth0MVC.forImplicitGrant("me.auth0.com", "clientId", "clientSecret", requestProcessorFactory);
+    }
+
+    @Test
+    public void shouldBuildAuthorizeUriWithCustomStateAndNonce() throws Exception {
+        Auth0MVC mvc = Auth0MVC.forCodeGrant("domain", "clientId", "clientSecret", requestProcessorFactory);
+        HttpServletRequest req = new MockHttpServletRequest();
+        mvc.buildAuthorizeUrl(req, "https://redirect.uri/here", "responseType", "state", "nonce");
+
+        verify(requestProcessor).buildAuthorizeUrl("https://redirect.uri/here", "responseType", "state", "nonce");
+    }
+
+    @Test
+    public void shouldNotSaveNonceInSessionIfRequestTypeIsNotIdToken() throws Exception {
+        Auth0MVC mvc = Auth0MVC.forCodeGrant("domain", "clientId", "clientSecret", requestProcessorFactory);
+        HttpServletRequest req = new MockHttpServletRequest();
+        mvc.buildAuthorizeUrl(req, "https://redirect.uri/here", "responseType");
+
+        ArgumentCaptor<String> stateCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> nonceCaptor = ArgumentCaptor.forClass(String.class);
+        verify(requestProcessor).buildAuthorizeUrl(eq("https://redirect.uri/here"), eq("responseType"), stateCaptor.capture(), nonceCaptor.capture());
+
+        assertThat(stateCaptor.getValue(), is(not(emptyOrNullString())));
+        assertThat(nonceCaptor.getValue(), is(not(emptyOrNullString())));
+        String savedState = (String) req.getSession(true).getAttribute("com.auth0.state");
+        String savedNonce = (String) req.getSession(true).getAttribute("com.auth0.nonce");
+        assertThat(savedState, is(stateCaptor.getValue()));
+        assertThat(savedNonce, is(nullValue()));
+    }
+
+    @Test
+    public void shouldSaveNonceInSessionIfRequestTypeIsIdToken() throws Exception {
+        Auth0MVC mvc = Auth0MVC.forCodeGrant("domain", "clientId", "clientSecret", requestProcessorFactory);
+        HttpServletRequest req = new MockHttpServletRequest();
+        mvc.buildAuthorizeUrl(req, "https://redirect.uri/here", "id_token");
+
+        ArgumentCaptor<String> stateCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> nonceCaptor = ArgumentCaptor.forClass(String.class);
+        verify(requestProcessor).buildAuthorizeUrl(eq("https://redirect.uri/here"), eq("id_token"), stateCaptor.capture(), nonceCaptor.capture());
+
+        assertThat(stateCaptor.getValue(), is(not(emptyOrNullString())));
+        assertThat(nonceCaptor.getValue(), is(not(emptyOrNullString())));
+        String savedState = (String) req.getSession(true).getAttribute("com.auth0.state");
+        String savedNonce = (String) req.getSession(true).getAttribute("com.auth0.nonce");
+        assertThat(savedState, is(stateCaptor.getValue()));
+        assertThat(savedNonce, is(nonceCaptor.getValue()));
     }
 
 }

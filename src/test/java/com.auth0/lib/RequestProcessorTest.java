@@ -6,6 +6,7 @@ import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.auth.UserInfo;
 import com.auth0.net.AuthRequest;
 import com.auth0.net.Request;
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -261,6 +262,36 @@ public class RequestProcessorTest {
         verify(client).userInfo("theAccessToken");
 
         assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
+    }
+
+    @Test
+    public void shouldBuildAuthorizeUrl() throws Exception {
+        AuthAPI client = new AuthAPI("me.auth0.com", "clientId", "clientSecret");
+        RequestProcessor handler = new RequestProcessor(client);
+        String authorizeUrl = handler.buildAuthorizeUrl("https://redirect.uri/here", "responseType", "state", "nonce");
+
+        assertThat(authorizeUrl, is(notNullValue()));
+        assertThat(authorizeUrl, CoreMatchers.startsWith("https://me.auth0.com/authorize?"));
+        assertThat(authorizeUrl, containsString("client_id=clientId"));
+        assertThat(authorizeUrl, containsString("redirect_uri=https://redirect.uri/here"));
+        assertThat(authorizeUrl, containsString("response_type=responseType"));
+        assertThat(authorizeUrl, containsString("state=state"));
+        assertThat(authorizeUrl, not(containsString("nonce=nonce")));
+    }
+
+    @Test
+    public void shouldBuildAuthorizeUrlWithNonceIfResponseTypeIsIdToken() throws Exception {
+        AuthAPI client = new AuthAPI("me.auth0.com", "clientId", "clientSecret");
+        RequestProcessor handler = new RequestProcessor(client);
+        String authorizeUrl = handler.buildAuthorizeUrl("https://redirect.uri/here", "id_token", "state", "nonce");
+
+        assertThat(authorizeUrl, is(notNullValue()));
+        assertThat(authorizeUrl, CoreMatchers.startsWith("https://me.auth0.com/authorize?"));
+        assertThat(authorizeUrl, containsString("client_id=clientId"));
+        assertThat(authorizeUrl, containsString("redirect_uri=https://redirect.uri/here"));
+        assertThat(authorizeUrl, containsString("response_type=id_token"));
+        assertThat(authorizeUrl, containsString("state=state"));
+        assertThat(authorizeUrl, containsString("nonce=nonce"));
     }
 
     // Utils

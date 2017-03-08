@@ -108,4 +108,42 @@ public class Auth0MVC {
 
         return requestProcessor.process(request);
     }
+
+    /**
+     * Builds an Auth0 Authorize Url ready to call with the given parameters.
+     *
+     * @param request      the caller request. Used to keep the session.
+     * @param redirectUri  the url to call with the authentication result.
+     * @param responseType the response type to request. It's strongly encouraged to use 'code'.
+     * @return the authorize url ready to call.
+     */
+    public String buildAuthorizeUrl(HttpServletRequest request, String redirectUri, String responseType) {
+        String state = SessionUtils.secureRandomString();
+        String nonce = SessionUtils.secureRandomString();
+        return buildAuthorizeUrl(request, redirectUri, responseType, state, nonce);
+    }
+
+    /**
+     * Builds an Auth0 Authorize Url ready to call with the given parameters.
+     *
+     * @param request      the caller request. Used to keep the session.
+     * @param redirectUri  the url to call with the authentication result.
+     * @param responseType the response type to request. It's strongly encouraged to use 'code'.
+     * @param state        a valid state value.
+     * @param nonce        the nonce value that will be used if the response type contains 'id_token'. Can be null.
+     * @return the authorize url ready to call.
+     */
+    public String buildAuthorizeUrl(HttpServletRequest request, String redirectUri, String responseType, String state, String nonce) {
+        Validate.notNull(request);
+        Validate.notNull(redirectUri);
+        Validate.notNull(responseType);
+        Validate.notNull(state);
+
+        SessionUtils.setSessionState(request, state);
+        if (responseType.contains("id_token") && nonce != null) {
+            SessionUtils.setSessionNonce(request, nonce);
+        }
+        return requestProcessor.buildAuthorizeUrl(redirectUri, responseType, state, nonce);
+    }
+
 }

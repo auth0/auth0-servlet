@@ -49,7 +49,6 @@ public class Auth0RedirectServlet extends HttpServlet {
         String domain = readRequiredParameter("com.auth0.domain", config);
         String clientId = readRequiredParameter("com.auth0.client_id", config);
         String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
-        String certificatePath = config.getServletContext().getContextPath() + config.getInitParameter("com.auth0.certificate");
 
         auth0MVC = Auth0MVC.forCodeGrant(domain, clientId, clientSecret);
     }
