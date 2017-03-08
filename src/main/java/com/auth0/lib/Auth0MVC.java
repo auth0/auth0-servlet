@@ -2,6 +2,7 @@ package com.auth0.lib;
 
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.jwk.JwkProvider;
+import org.apache.commons.lang3.Validate;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
@@ -27,9 +28,13 @@ public class Auth0MVC {
     }
 
     static Auth0MVC forCodeGrant(String domain, String clientId, String clientSecret, RequestProcessorFactory factory) {
-        AuthAPI authAPI = new AuthAPI(domain, clientId, clientSecret);
-        APIClientHelper helper = new APIClientHelper(authAPI);
-        return new Auth0MVC(factory.forCodeGrant(helper));
+        Validate.notNull(domain);
+        Validate.notNull(clientId);
+        Validate.notNull(clientSecret);
+        Validate.notNull(factory);
+
+        AuthAPI client = new AuthAPI(domain, clientId, clientSecret);
+        return new Auth0MVC(factory.forCodeGrant(client));
     }
 
     /**
@@ -46,9 +51,13 @@ public class Auth0MVC {
     }
 
     static Auth0MVC forImplicitGrant(String domain, String clientId, String clientSecret, RequestProcessorFactory factory) throws UnsupportedEncodingException {
-        AuthAPI authAPI = new AuthAPI(domain, clientId, clientSecret);
-        APIClientHelper helper = new APIClientHelper(authAPI);
-        RequestProcessor requestProcessor = factory.forImplicitGrantHS(helper, clientSecret, domain, clientId);
+        Validate.notNull(domain);
+        Validate.notNull(clientId);
+        Validate.notNull(clientSecret);
+        Validate.notNull(factory);
+
+        AuthAPI client = new AuthAPI(domain, clientId, clientSecret);
+        RequestProcessor requestProcessor = factory.forImplicitGrantHS(client, clientSecret, domain, clientId);
         return new Auth0MVC(requestProcessor);
     }
 
@@ -65,9 +74,13 @@ public class Auth0MVC {
     }
 
     static Auth0MVC forImplicitGrant(String domain, String clientId, JwkProvider jwkProvider, RequestProcessorFactory factory) {
-        AuthAPI authAPI = new AuthAPI(domain, clientId, "");
-        APIClientHelper helper = new APIClientHelper(authAPI);
-        RequestProcessor requestProcessor = factory.forImplicitGrantRS(helper, jwkProvider, domain, clientId);
+        Validate.notNull(domain);
+        Validate.notNull(clientId);
+        Validate.notNull(jwkProvider);
+        Validate.notNull(factory);
+
+        AuthAPI client = new AuthAPI(domain, clientId, "");
+        RequestProcessor requestProcessor = factory.forImplicitGrantRS(client, jwkProvider, domain, clientId);
         return new Auth0MVC(requestProcessor);
     }
 
@@ -91,6 +104,8 @@ public class Auth0MVC {
      * @throws ProcessorException if an error occurred while processing the request
      */
     public Tokens handle(HttpServletRequest request) throws ProcessorException {
+        Validate.notNull(request);
+
         return requestProcessor.process(request);
     }
 }

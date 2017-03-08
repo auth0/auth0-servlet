@@ -1,5 +1,6 @@
 package com.auth0.lib;
 
+import com.auth0.client.auth.AuthAPI;
 import com.auth0.jwk.JwkProvider;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,7 +25,7 @@ public class RequestProcessorFactoryTest {
     public ExpectedException exception = ExpectedException.none();
 
     @Mock
-    private APIClientHelper clientHelper;
+    private AuthAPI client;
     private RequestProcessorFactory factory;
 
     @Before
@@ -35,26 +36,26 @@ public class RequestProcessorFactoryTest {
 
     @Test
     public void shouldCreateForCodeGrant() throws Exception {
-        RequestProcessor processor = factory.forCodeGrant(clientHelper);
+        RequestProcessor processor = factory.forCodeGrant(client);
         assertThat(processor, is(notNullValue()));
-        assertThat(processor.clientHelper, is(clientHelper));
+        assertThat(processor.client, is(client));
         assertThat(processor.verifier, is(nullValue()));
     }
 
     @Test
     public void shouldCreateForImplicitGrantHS() throws Exception {
-        RequestProcessor processor = factory.forImplicitGrantHS(clientHelper, "clientSecret", "domain", "clientId");
+        RequestProcessor processor = factory.forImplicitGrantHS(client, "clientSecret", "domain", "clientId");
         assertThat(processor, is(notNullValue()));
-        assertThat(processor.clientHelper, is(clientHelper));
+        assertThat(processor.client, is(client));
         assertThat(processor.verifier, is(notNullValue()));
     }
 
     @Test
     public void shouldCreateForImplicitGrantRS() throws Exception {
         JwkProvider jwkProvider = mock(JwkProvider.class);
-        RequestProcessor processor = factory.forImplicitGrantRS(clientHelper, jwkProvider, "domain", "clientId");
+        RequestProcessor processor = factory.forImplicitGrantRS(client, jwkProvider, "domain", "clientId");
         assertThat(processor, is(notNullValue()));
-        assertThat(processor.clientHelper, is(clientHelper));
+        assertThat(processor.client, is(client));
         assertThat(processor.verifier, is(notNullValue()));
     }
 

@@ -1,5 +1,6 @@
 package com.auth0.lib;
 
+import com.auth0.client.auth.AuthAPI;
 import com.auth0.jwk.JwkProvider;
 import org.apache.commons.lang3.Validate;
 import org.bouncycastle.util.io.pem.PemReader;
@@ -22,18 +23,18 @@ class RequestProcessorFactory {
 
     private static final String RSA_CERTIFICATE_HEADER = "-----BEGIN CERTIFICATE-----";
 
-    RequestProcessor forCodeGrant(APIClientHelper clientHelper) {
-        return new RequestProcessor(clientHelper);
+    RequestProcessor forCodeGrant(AuthAPI client) {
+        return new RequestProcessor(client);
     }
 
-    RequestProcessor forImplicitGrantHS(APIClientHelper clientHelper, String clientSecret, String domain, String clientId) throws UnsupportedEncodingException {
+    RequestProcessor forImplicitGrantHS(AuthAPI client, String clientSecret, String domain, String clientId) throws UnsupportedEncodingException {
         TokenVerifier verifier = new TokenVerifier(clientSecret, clientId, domain);
-        return new RequestProcessor(clientHelper, verifier);
+        return new RequestProcessor(client, verifier);
     }
 
-    RequestProcessor forImplicitGrantRS(APIClientHelper clientHelper, JwkProvider jwkProvider, String domain, String clientId) {
+    RequestProcessor forImplicitGrantRS(AuthAPI client, JwkProvider jwkProvider, String domain, String clientId) {
         TokenVerifier verifier = new TokenVerifier(jwkProvider, clientId, domain);
-        return new RequestProcessor(clientHelper, verifier);
+        return new RequestProcessor(client, verifier);
     }
 
 

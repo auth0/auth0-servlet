@@ -1,5 +1,6 @@
 package com.auth0.lib;
 
+import com.auth0.client.auth.AuthAPI;
 import com.auth0.jwk.JwkProvider;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,42 +31,42 @@ public class Auth0MVCTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        when(requestProcessorFactory.forCodeGrant(any(APIClientHelper.class))).thenReturn(requestProcessor);
-        when(requestProcessorFactory.forImplicitGrantHS(any(APIClientHelper.class), anyString(), anyString(), anyString())).thenReturn(requestProcessor);
-        when(requestProcessorFactory.forImplicitGrantRS(any(APIClientHelper.class), any(JwkProvider.class), anyString(), anyString())).thenReturn(requestProcessor);
+        when(requestProcessorFactory.forCodeGrant(any(AuthAPI.class))).thenReturn(requestProcessor);
+        when(requestProcessorFactory.forImplicitGrantHS(any(AuthAPI.class), anyString(), anyString(), anyString())).thenReturn(requestProcessor);
+        when(requestProcessorFactory.forImplicitGrantRS(any(AuthAPI.class), any(JwkProvider.class), anyString(), anyString())).thenReturn(requestProcessor);
     }
 
     @Test
     public void shouldThrowOnMissingDomainWhenCreatingCode() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(NullPointerException.class);
 
         Auth0MVC.forCodeGrant(null, "clientId", "clientSecret");
     }
 
     @Test
     public void shouldThrowOnMissingClientIdWhenCreatingCode() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(NullPointerException.class);
 
         Auth0MVC.forCodeGrant("domain", null, "clientSecret");
     }
 
     @Test
     public void shouldThrowOnMissingClientSecretWhenCreatingCode() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(NullPointerException.class);
 
         Auth0MVC.forCodeGrant("domain", "clientId", null);
     }
 
     @Test
     public void shouldThrowOnMissingDomainWhenCreatingHS() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(NullPointerException.class);
 
         Auth0MVC.forImplicitGrant(null, "clientId", "clientSecret");
     }
 
     @Test
     public void shouldThrowOnMissingClientIdWhenCreatingHS() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(NullPointerException.class);
 
         Auth0MVC.forImplicitGrant("domain", null, "clientSecret");
     }
@@ -73,7 +74,7 @@ public class Auth0MVCTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldThrowOnMissingClientSecretWhenCreatingHS() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(NullPointerException.class);
 
         String secret = null;
         Auth0MVC.forImplicitGrant("domain", "clientId", secret);
@@ -81,7 +82,7 @@ public class Auth0MVCTest {
 
     @Test
     public void shouldThrowOnMissingDomainWhenCreatingRS() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(NullPointerException.class);
 
         JwkProvider jwkProvider = mock(JwkProvider.class);
         Auth0MVC.forImplicitGrant(null, "clientId", jwkProvider);
@@ -89,7 +90,7 @@ public class Auth0MVCTest {
 
     @Test
     public void shouldThrowOnMissingClientIdWhenCreatingRS() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(NullPointerException.class);
 
         JwkProvider jwkProvider = mock(JwkProvider.class);
         Auth0MVC.forImplicitGrant("domain", null, jwkProvider);
@@ -122,13 +123,13 @@ public class Auth0MVCTest {
     @Test
     public void shouldProcessRequestWithCodeGrant() throws Exception {
         RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
-        when(requestProcessorFactory.forCodeGrant(any(APIClientHelper.class))).thenReturn(requestProcessor);
+        when(requestProcessorFactory.forCodeGrant(any(AuthAPI.class))).thenReturn(requestProcessor);
 
         Auth0MVC mvc = Auth0MVC.forCodeGrant("domain", "clientId", "clientSecret", requestProcessorFactory);
         HttpServletRequest req = new MockHttpServletRequest();
         mvc.handle(req);
 
-        verify(requestProcessorFactory).forCodeGrant(any(APIClientHelper.class));
+        verify(requestProcessorFactory).forCodeGrant(any(AuthAPI.class));
         verify(requestProcessor).process(req);
     }
 
@@ -136,26 +137,26 @@ public class Auth0MVCTest {
     public void shouldProcessRequestWithImplicitGrantRS() throws Exception {
         RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
         JwkProvider jwtProvider = mock(JwkProvider.class);
-        when(requestProcessorFactory.forImplicitGrantRS(any(APIClientHelper.class), eq(jwtProvider), eq("me.auth0.com"), eq("clientId"))).thenReturn(requestProcessor);
+        when(requestProcessorFactory.forImplicitGrantRS(any(AuthAPI.class), eq(jwtProvider), eq("me.auth0.com"), eq("clientId"))).thenReturn(requestProcessor);
 
         Auth0MVC mvc = Auth0MVC.forImplicitGrant("me.auth0.com", "clientId", jwtProvider, requestProcessorFactory);
         HttpServletRequest req = new MockHttpServletRequest();
         mvc.handle(req);
 
-        verify(requestProcessorFactory).forImplicitGrantRS(any(APIClientHelper.class), eq(jwtProvider), eq("me.auth0.com"), eq("clientId"));
+        verify(requestProcessorFactory).forImplicitGrantRS(any(AuthAPI.class), eq(jwtProvider), eq("me.auth0.com"), eq("clientId"));
         verify(requestProcessor).process(req);
     }
 
     @Test
     public void shouldProcessRequestWithImplicitGrantHS() throws Exception {
         RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
-        when(requestProcessorFactory.forImplicitGrantHS(any(APIClientHelper.class), eq("clientSecret"), eq("me.auth0.com"), eq("clientId"))).thenReturn(requestProcessor);
+        when(requestProcessorFactory.forImplicitGrantHS(any(AuthAPI.class), eq("clientSecret"), eq("me.auth0.com"), eq("clientId"))).thenReturn(requestProcessor);
 
         Auth0MVC mvc = Auth0MVC.forImplicitGrant("me.auth0.com", "clientId", "clientSecret", requestProcessorFactory);
         HttpServletRequest req = new MockHttpServletRequest();
         mvc.handle(req);
 
-        verify(requestProcessorFactory).forImplicitGrantHS(any(APIClientHelper.class), eq("clientSecret"), eq("me.auth0.com"), eq("clientId"));
+        verify(requestProcessorFactory).forImplicitGrantHS(any(AuthAPI.class), eq("clientSecret"), eq("me.auth0.com"), eq("clientId"));
         verify(requestProcessor).process(req);
     }
 
@@ -164,7 +165,7 @@ public class Auth0MVCTest {
         exception.expect(UnsupportedEncodingException.class);
 
         RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
-        when(requestProcessorFactory.forImplicitGrantHS(any(APIClientHelper.class), eq("clientSecret"), eq("me.auth0.com"), eq("clientId"))).thenThrow(UnsupportedEncodingException.class);
+        when(requestProcessorFactory.forImplicitGrantHS(any(AuthAPI.class), eq("clientSecret"), eq("me.auth0.com"), eq("clientId"))).thenThrow(UnsupportedEncodingException.class);
         Auth0MVC.forImplicitGrant("me.auth0.com", "clientId", "clientSecret", requestProcessorFactory);
     }
 
