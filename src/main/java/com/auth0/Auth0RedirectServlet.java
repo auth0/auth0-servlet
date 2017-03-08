@@ -1,6 +1,7 @@
 package com.auth0;
 
-import com.auth0.client.auth.AuthAPI;
+import com.auth0.lib.Auth0MVC;
+import com.auth0.lib.ProcessorException;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -9,28 +10,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static com.auth0.ServletUtils.*;
+import static com.auth0.ConfigUtils.readLocalRequiredParameter;
+import static com.auth0.ConfigUtils.readRequiredParameter;
 
 /**
  * The Servlet endpoint used as the callback handler in the OAuth 2.0 authorization code grant flow.
  * It will be called with the authorization code after a successful login.
  */
-public class Auth0RedirectServlet extends HttpServlet implements TokensCallback {
+@SuppressWarnings("WeakerAccess")
+public class Auth0RedirectServlet extends HttpServlet {
 
-    private AuthRequestProcessor authRequestProcessor;
     private String redirectOnSuccess;
     private String redirectOnFail;
-    private boolean allowPost;
+    private Auth0MVC auth0MVC;
 
-    //Visible for testing
-    @SuppressWarnings("WeakerAccess")
-    Auth0RedirectServlet(AuthRequestProcessor authRequestProcessor) {
-        this.authRequestProcessor = authRequestProcessor;
-    }
-
-    public Auth0RedirectServlet() {
-        this(null);
-    }
 
     /**
      * Initialize this servlet with required configuration.
@@ -52,27 +45,19 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
         super.init(config);
         redirectOnSuccess = readLocalRequiredParameter("com.auth0.redirect_on_success", config);
         redirectOnFail = readLocalRequiredParameter("com.auth0.redirect_on_error", config);
-        allowPost = isFlagEnabled("com.auth0.allow_post", config);
-        if (authRequestProcessor != null) {
-            return;
-        }
 
         String domain = readRequiredParameter("com.auth0.domain", config);
         String clientId = readRequiredParameter("com.auth0.client_id", config);
         String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
-        APIClientHelper clientHelper = new APIClientHelper(new AuthAPI(domain, clientId, clientSecret));
-        authRequestProcessor = new AuthRequestProcessor(clientHelper, this);
+        String certificatePath = config.getServletContext().getContextPath() + config.getInitParameter("com.auth0.certificate");
+
+        auth0MVC = Auth0MVC.forCodeGrant(domain, clientId, clientSecret);
     }
 
     @Override
     public void destroy() {
         super.destroy();
-        authRequestProcessor = null;
-    }
-
-    //Visible for testing
-    AuthRequestProcessor getAuthRequestProcessor() {
-        return authRequestProcessor;
+        auth0MVC = null;
     }
 
     /**
@@ -85,7 +70,14 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      */
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        authRequestProcessor.process(req, res);
+        try {
+            auth0MVC.handle(req);
+        } catch (ProcessorException e) {
+            e.printStackTrace();
+            res.sendRedirect(req.getContextPath() + redirectOnFail);
+            return;
+        }
+        res.sendRedirect(req.getContextPath() + redirectOnSuccess);
     }
 
 
@@ -100,21 +92,14 @@ public class Auth0RedirectServlet extends HttpServlet implements TokensCallback 
      */
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
-        if (allowPost) {
-            authRequestProcessor.process(req, res);
-        } else {
-            res.sendError(405);
+        try {
+            auth0MVC.handle(req);
+        } catch (ProcessorException e) {
+            e.printStackTrace();
+            res.sendRedirect(req.getContextPath() + redirectOnFail);
+            return;
         }
-    }
-
-    @Override
-    public void onSuccess(HttpServletRequest req, HttpServletResponse res, Tokens tokens) throws IOException {
         res.sendRedirect(req.getContextPath() + redirectOnSuccess);
-    }
-
-    @Override
-    public void onFailure(HttpServletRequest req, HttpServletResponse res, Throwable e) throws IOException {
-        res.sendRedirect(req.getContextPath() + redirectOnFail);
     }
 
 }

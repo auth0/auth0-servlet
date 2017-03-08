@@ -1,27 +1,31 @@
-package com.auth0;
+package com.auth0.lib;
 
 import com.auth0.exception.Auth0Exception;
+import com.auth0.jwk.JwkException;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import org.apache.commons.lang3.Validate;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 /**
  * Main class to handle the Authorize Redirect request.
  * It will try to parse the parameters looking for tokens or an authorization code to perform a Code Exchange against the Auth0 servers.
  * When the tokens are obtained, it will request the user id associated to them and save it in the {@link javax.servlet.http.HttpSession}.
  */
-class AuthRequestProcessor {
+class RequestProcessor {
 
-    private final APIClientHelper clientHelper;
-    private final TokensCallback callback;
+    //Visible for testing
+    final APIClientHelper clientHelper;
+    final TokenVerifier verifier;
 
-    public AuthRequestProcessor(APIClientHelper clientHelper, TokensCallback callback) {
+    RequestProcessor(APIClientHelper clientHelper, TokenVerifier verifier) {
         Validate.notNull(clientHelper);
-        Validate.notNull(callback);
         this.clientHelper = clientHelper;
-        this.callback = callback;
+        this.verifier = verifier;
+    }
+
+    RequestProcessor(APIClientHelper clientHelper) {
+        this(clientHelper, null);
     }
 
     /**
@@ -34,32 +38,42 @@ class AuthRequestProcessor {
      * 5). Clearing the stored state value.
      * 6). Handling success and any failure outcomes.
      *
-     * @throws Auth0Exception
-     * @throws IOException
+     * @throws ProcessorException if an error occurred while processing the request
      */
-    public void process(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        boolean validRequest = isValidRequest(req);
-        if (!validRequest) {
-            callback.onFailure(req, res, new IllegalStateException("Invalid state or error"));
-            return;
-        }
+    Tokens process(HttpServletRequest req) throws ProcessorException {
+        assertNoError(req);
+        assertValidState(req);
 
         Tokens tokens = tokensFromRequest(req);
         String authorizationCode = req.getParameter("code");
-        if (authorizationCode != null) {
+
+        String userId;
+        if (authorizationCode == null && verifier == null) {
+            throw new ProcessorException("Authorization Code missing from the request and Implicit Grant not allowed.");
+        } else if (verifier != null) {
+            String expectedNonce = SessionUtils.removeSessionNonce(req);
+            try {
+                userId = verifier.verifyNonce(tokens.getIdToken(), expectedNonce);
+            } catch (JwkException | JWTVerificationException e) {
+                throw new ProcessorException("An error occurred while trying to verify the Id Token.", e);
+            }
+        } else {
             String redirectUri = req.getRequestURL().toString();
-            Tokens latestTokens = exchangeCodeForTokens(authorizationCode, redirectUri);
-            tokens = mergeTokens(tokens, latestTokens);
+            try {
+                Tokens latestTokens = exchangeCodeForTokens(authorizationCode, redirectUri);
+                tokens = mergeTokens(tokens, latestTokens);
+                userId = fetchUserId(tokens);
+            } catch (Auth0Exception e) {
+                throw new ProcessorException("Couldn't exchange the Authorization Code for Auth0 Tokens", e);
+            }
         }
 
-        String userId = fetchUserId(tokens);
         if (userId == null) {
-            callback.onFailure(req, res, new IllegalStateException("Couldn't obtain the User Id."));
-            return;
+            throw new ProcessorException("Couldn't obtain the User Id.");
         }
 
-        ServletUtils.setSessionUserId(req, userId);
-        callback.onSuccess(req, res, tokens);
+        SessionUtils.setSessionUserId(req, userId);
+        return tokens;
     }
 
     /**
@@ -74,34 +88,30 @@ class AuthRequestProcessor {
     }
 
     /**
-     * Indicates whether the request is deemed valid
-     *
-     * @param req the request
-     * @return whether this request is deemed valid or not.
-     */
-    private boolean isValidRequest(HttpServletRequest req) {
-        return !hasError(req) && hasValidState(req);
-    }
-
-    /**
      * Checks for the presence of an error in the request parameters
      *
      * @param req the request
-     * @return whether an error was present or not.
+     * @throws ProcessorException if the request contains an error
      */
-    private boolean hasError(HttpServletRequest req) {
-        return req.getParameter("error") != null;
+    private void assertNoError(HttpServletRequest req) throws ProcessorException {
+        String error = req.getParameter("error");
+        if (error != null) {
+            throw new ProcessorException("The request contains an error: " + error);
+        }
     }
 
     /**
-     * Indicates whether the state persisted in the session matches the state value received in the request parameters.
+     * Checks whether the state persisted in the session matches the state value received in the request parameters.
      *
      * @param req the request
-     * @return whether state matches or not.
+     * @throws ProcessorException if the request contains a different state from the expected one
      */
-    private boolean hasValidState(HttpServletRequest req) {
+    private void assertValidState(HttpServletRequest req) throws ProcessorException {
         String stateFromRequest = req.getParameter("state");
-        return ServletUtils.checkSessionState(req, stateFromRequest);
+        boolean valid = SessionUtils.checkSessionState(req, stateFromRequest);
+        if (!valid) {
+            throw new ProcessorException("The request contains an invalid state");
+        }
     }
 
     /**
