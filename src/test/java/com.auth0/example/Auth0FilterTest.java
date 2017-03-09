@@ -1,4 +1,4 @@
-package com.auth0;
+package com.auth0.example;
 
 import org.junit.After;
 import org.junit.Before;

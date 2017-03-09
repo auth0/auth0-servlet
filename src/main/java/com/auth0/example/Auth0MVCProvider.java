@@ -5,7 +5,7 @@ import com.auth0.lib.Auth0MVC;
 import javax.servlet.ServletConfig;
 import java.io.UnsupportedEncodingException;
 
-import static com.auth0.ConfigUtils.readRequiredParameter;
+import static com.auth0.example.ConfigUtils.readRequiredParameter;
 
 public abstract class Auth0MVCProvider {
 

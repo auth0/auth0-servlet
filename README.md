@@ -41,7 +41,7 @@ You need to add the library classes to the deployment descriptor file located in
     ```xml
     <servlet>
         <servlet-name>RedirectCallback</servlet-name>
-        <servlet-class>com.auth0.Auth0RedirectServlet</servlet-class>
+        <servlet-class>com.auth0.example.Auth0RedirectServlet</servlet-class>
         <init-param>
             <param-name>com.auth0.redirect_on_success</param-name>
             <param-value>/portal/home</param-value>
@@ -67,7 +67,7 @@ You need to add the library classes to the deployment descriptor file located in
     ```xml
     <filter>
         <filter-name>AuthFilter</filter-name>
-        <filter-class>com.auth0.Auth0Filter</filter-class>
+        <filter-class>com.auth0.example.Auth0Filter</filter-class>
         <init-param>
             <param-name>com.auth0.redirect_on_authentication_error</param-name>
             <param-value>/login</param-value>

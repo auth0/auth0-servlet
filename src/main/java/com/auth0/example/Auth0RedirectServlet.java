@@ -1,6 +1,5 @@
-package com.auth0;
+package com.auth0.example;
 
-import com.auth0.example.Auth0MVCProvider;
 import com.auth0.lib.Auth0MVC;
 import com.auth0.lib.ProcessorException;
 import com.auth0.lib.SessionUtils;
@@ -13,8 +12,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-
-import static com.auth0.ConfigUtils.readLocalRequiredParameter;
 
 /**
  * The Servlet endpoint used as the callback handler in the OAuth 2.0 authorization code grant flow.
@@ -46,8 +43,8 @@ public class Auth0RedirectServlet extends HttpServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        redirectOnSuccess = readLocalRequiredParameter("com.auth0.redirect_on_success", config);
-        redirectOnFail = readLocalRequiredParameter("com.auth0.redirect_on_error", config);
+        redirectOnSuccess = ConfigUtils.readLocalRequiredParameter("com.auth0.redirect_on_success", config);
+        redirectOnFail = ConfigUtils.readLocalRequiredParameter("com.auth0.redirect_on_error", config);
 
         try {
             auth0MVC = Auth0MVCProvider.getInstance(config);
