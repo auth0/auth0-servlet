@@ -60,8 +60,8 @@ public class Auth0Filter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain next) throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
-        String userId = SessionUtils.getSessionUserId(req);
-        if (userId == null) {
+        String accessToken = (String) SessionUtils.get(req, "accessToken");
+        if (accessToken == null) {
             onReject(res);
             return;
         }
@@ -69,6 +69,5 @@ public class Auth0Filter implements Filter {
     }
 
     @Override
-    public void destroy() {
-    }
+    public void destroy() {}
 }

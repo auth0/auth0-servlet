@@ -81,7 +81,7 @@ class RequestProcessor {
             throw new ProcessorException("Authorization Code missing from the request and Implicit Grant not allowed.");
         } else if (verifier != null) {
             if (getResponseType().contains("id_token")) {
-                String expectedNonce = SessionUtils.removeSessionNonce(req);
+                String expectedNonce = RandomStorage.removeSessionNonce(req);
                 try {
                     userId = verifier.verifyNonce(tokens.getIdToken(), expectedNonce);
                 } catch (JwkException | JWTVerificationException e) {
@@ -109,7 +109,6 @@ class RequestProcessor {
             throw new ProcessorException("Couldn't obtain the User Id.");
         }
 
-        SessionUtils.setSessionUserId(req, userId);
         return tokens;
     }
 
@@ -145,7 +144,7 @@ class RequestProcessor {
      */
     private void assertValidState(HttpServletRequest req) throws ProcessorException {
         String stateFromRequest = req.getParameter("state");
-        boolean valid = SessionUtils.checkSessionState(req, stateFromRequest);
+        boolean valid = RandomStorage.checkSessionState(req, stateFromRequest);
         if (!valid) {
             throw new ProcessorException("The request contains an invalid state");
         }

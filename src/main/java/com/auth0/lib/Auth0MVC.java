@@ -111,8 +111,8 @@ public class Auth0MVC {
      * @return the authorize url ready to call.
      */
     public String buildAuthorizeUrl(HttpServletRequest request, String redirectUri) {
-        String state = SessionUtils.secureRandomString();
-        String nonce = SessionUtils.secureRandomString();
+        String state = RandomStorage.secureRandomString();
+        String nonce = RandomStorage.secureRandomString();
         return buildAuthorizeUrl(request, redirectUri, state, nonce);
     }
 
@@ -130,9 +130,9 @@ public class Auth0MVC {
         Validate.notNull(redirectUri);
         Validate.notNull(state);
 
-        SessionUtils.setSessionState(request, state);
+        RandomStorage.setSessionState(request, state);
         if (requestProcessor.getResponseType().contains("id_token") && nonce != null) {
-            SessionUtils.setSessionNonce(request, nonce);
+            RandomStorage.setSessionNonce(request, nonce);
         }
         return requestProcessor.buildAuthorizeUrl(redirectUri, state, nonce);
     }

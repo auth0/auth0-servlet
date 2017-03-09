@@ -1,7 +1,10 @@
 package com.auth0;
 
+import com.auth0.example.Auth0MVCProvider;
 import com.auth0.lib.Auth0MVC;
 import com.auth0.lib.ProcessorException;
+import com.auth0.lib.SessionUtils;
+import com.auth0.lib.Tokens;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -12,7 +15,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 import static com.auth0.ConfigUtils.readLocalRequiredParameter;
-import static com.auth0.ConfigUtils.readRequiredParameter;
 
 /**
  * The Servlet endpoint used as the callback handler in the OAuth 2.0 authorization code grant flow.
@@ -47,14 +49,10 @@ public class Auth0RedirectServlet extends HttpServlet {
         redirectOnSuccess = readLocalRequiredParameter("com.auth0.redirect_on_success", config);
         redirectOnFail = readLocalRequiredParameter("com.auth0.redirect_on_error", config);
 
-        String domain = readRequiredParameter("com.auth0.domain", config);
-        String clientId = readRequiredParameter("com.auth0.client_id", config);
-        String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
-
         try {
-            auth0MVC = Auth0MVC.forHS256(domain, clientId, clientSecret, "code");
+            auth0MVC = Auth0MVCProvider.getInstance(config);
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            throw new ServletException("Couldn't create the Auth0MVC instance. Check the configuration.", e);
         }
     }
 
@@ -69,7 +67,8 @@ public class Auth0RedirectServlet extends HttpServlet {
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         try {
-            auth0MVC.handle(req);
+            Tokens tokens = auth0MVC.handle(req);
+            SessionUtils.set(req, "accessToken", tokens.getAccessToken());
         } catch (ProcessorException e) {
             e.printStackTrace();
             res.sendRedirect(req.getContextPath() + redirectOnFail);
@@ -91,7 +90,8 @@ public class Auth0RedirectServlet extends HttpServlet {
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         try {
-            auth0MVC.handle(req);
+            Tokens tokens = auth0MVC.handle(req);
+            SessionUtils.set(req, "accessToken", tokens.getAccessToken());
         } catch (ProcessorException e) {
             e.printStackTrace();
             res.sendRedirect(req.getContextPath() + redirectOnFail);
