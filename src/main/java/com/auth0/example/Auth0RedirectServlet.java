@@ -1,6 +1,6 @@
 package com.auth0.example;
 
-import com.auth0.lib.Auth0MVC;
+import com.auth0.lib.AuthenticationController;
 import com.auth0.lib.ProcessorException;
 import com.auth0.lib.SessionUtils;
 import com.auth0.lib.Tokens;
@@ -22,7 +22,7 @@ public class Auth0RedirectServlet extends HttpServlet {
 
     private String redirectOnSuccess;
     private String redirectOnFail;
-    private Auth0MVC auth0MVC;
+    private AuthenticationController authenticationController;
 
 
     /**
@@ -47,9 +47,9 @@ public class Auth0RedirectServlet extends HttpServlet {
         redirectOnFail = ConfigUtils.readLocalRequiredParameter("com.auth0.redirect_on_error", config);
 
         try {
-            auth0MVC = Auth0MVCProvider.getInstance(config);
+            authenticationController = Auth0MVCProvider.getInstance(config);
         } catch (UnsupportedEncodingException e) {
-            throw new ServletException("Couldn't create the Auth0MVC instance. Check the configuration.", e);
+            throw new ServletException("Couldn't create the AuthenticationController instance. Check the configuration.", e);
         }
     }
 
@@ -64,7 +64,7 @@ public class Auth0RedirectServlet extends HttpServlet {
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         try {
-            Tokens tokens = auth0MVC.handle(req);
+            Tokens tokens = authenticationController.handle(req);
             SessionUtils.set(req, "accessToken", tokens.getAccessToken());
         } catch (ProcessorException e) {
             e.printStackTrace();
@@ -87,7 +87,7 @@ public class Auth0RedirectServlet extends HttpServlet {
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         try {
-            Tokens tokens = auth0MVC.handle(req);
+            Tokens tokens = authenticationController.handle(req);
             SessionUtils.set(req, "accessToken", tokens.getAccessToken());
         } catch (ProcessorException e) {
             e.printStackTrace();

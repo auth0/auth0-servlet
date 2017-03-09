@@ -1,7 +1,7 @@
 package com.auth0.example;
 
 
-import com.auth0.lib.Auth0MVC;
+import com.auth0.lib.AuthenticationController;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -13,15 +13,15 @@ import java.io.UnsupportedEncodingException;
 
 public class LoginServlet extends HttpServlet {
 
-    private Auth0MVC auth0MVC;
+    private AuthenticationController authenticationController;
 
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
         try {
-            auth0MVC = Auth0MVCProvider.getInstance(config);
+            authenticationController = Auth0MVCProvider.getInstance(config);
         } catch (UnsupportedEncodingException e) {
-            throw new ServletException("Couldn't create the Auth0MVC instance. Check the configuration.", e);
+            throw new ServletException("Couldn't create the AuthenticationController instance. Check the configuration.", e);
         }
     }
 
@@ -30,7 +30,7 @@ public class LoginServlet extends HttpServlet {
         String callbackPath = getServletConfig().getInitParameter("com.auth0.onLoginRedirectTo");
         String redirectUri = req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort() + callbackPath;
 
-        String authorizeUrl = auth0MVC.buildAuthorizeUrl(req, redirectUri);
+        String authorizeUrl = authenticationController.buildAuthorizeUrl(req, redirectUri);
         res.sendRedirect(authorizeUrl);
     }
 

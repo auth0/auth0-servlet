@@ -24,7 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-public class Auth0MVCTest {
+public class AuthenticationControllerTest {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -45,28 +45,28 @@ public class Auth0MVCTest {
     public void shouldThrowOnMissingDomainWhenCreatingHS256() throws Exception {
         exception.expect(NullPointerException.class);
 
-        Auth0MVC.forHS256(null, "clientId", "clientSecret", "responseType");
+        AuthenticationController.forHS256(null, "clientId", "clientSecret", "responseType");
     }
 
     @Test
     public void shouldThrowOnMissingClientIdWhenCreatingHS256() throws Exception {
         exception.expect(NullPointerException.class);
 
-        Auth0MVC.forHS256("domain", null, "clientSecret", "responseType");
+        AuthenticationController.forHS256("domain", null, "clientSecret", "responseType");
     }
 
     @Test
     public void shouldThrowOnMissingClientSecretWhenCreatingHS256() throws Exception {
         exception.expect(NullPointerException.class);
 
-        Auth0MVC.forHS256("domain", "clientId", null, "responseType");
+        AuthenticationController.forHS256("domain", "clientId", null, "responseType");
     }
 
     @Test
     public void shouldThrowOnMissingResponseTypeWhenCreatingHS256() throws Exception {
         exception.expect(NullPointerException.class);
 
-        Auth0MVC.forHS256("domain", "clientId", null, "responseType");
+        AuthenticationController.forHS256("domain", "clientId", null, "responseType");
     }
 
     @Test
@@ -74,7 +74,7 @@ public class Auth0MVCTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("Response Type must contain either 'code' or 'token'.");
 
-        Auth0MVC.forHS256("domain", "clientId", "clientSecret", "responseType");
+        AuthenticationController.forHS256("domain", "clientId", "clientSecret", "responseType");
     }
 
     @Test
@@ -82,7 +82,7 @@ public class Auth0MVCTest {
         exception.expect(NullPointerException.class);
         JwkProvider jwkProvider = mock(JwkProvider.class);
 
-        Auth0MVC.forRS256(null, "clientId", "clientSecret", "responseType", jwkProvider);
+        AuthenticationController.forRS256(null, "clientId", "clientSecret", "responseType", jwkProvider);
     }
 
     @Test
@@ -90,7 +90,7 @@ public class Auth0MVCTest {
         exception.expect(NullPointerException.class);
         JwkProvider jwkProvider = mock(JwkProvider.class);
 
-        Auth0MVC.forRS256("domain", null, "clientSecret", "responseType", jwkProvider);
+        AuthenticationController.forRS256("domain", null, "clientSecret", "responseType", jwkProvider);
     }
 
     @Test
@@ -98,7 +98,7 @@ public class Auth0MVCTest {
         exception.expect(NullPointerException.class);
         JwkProvider jwkProvider = mock(JwkProvider.class);
 
-        Auth0MVC.forRS256("domain", "clientId", null, "responseType", jwkProvider);
+        AuthenticationController.forRS256("domain", "clientId", null, "responseType", jwkProvider);
     }
 
     @Test
@@ -106,7 +106,7 @@ public class Auth0MVCTest {
         exception.expect(NullPointerException.class);
         JwkProvider jwkProvider = mock(JwkProvider.class);
 
-        Auth0MVC.forRS256("domain", "clientId", "clientSecret", null, jwkProvider);
+        AuthenticationController.forRS256("domain", "clientId", "clientSecret", null, jwkProvider);
     }
 
     @Test
@@ -115,18 +115,18 @@ public class Auth0MVCTest {
         exception.expectMessage("Response Type must contain either 'code' or 'token'.");
         JwkProvider jwkProvider = mock(JwkProvider.class);
 
-        Auth0MVC.forRS256("domain", "clientId", "clientSecret", "responseType", jwkProvider);
+        AuthenticationController.forRS256("domain", "clientId", "clientSecret", "responseType", jwkProvider);
     }
 
     @Test
     public void shouldCreateForHS256() throws Exception {
-        Auth0MVC.forHS256("domain", "clientId", "clientSecret", "code");
+        AuthenticationController.forHS256("domain", "clientId", "clientSecret", "code");
     }
 
     @Test
     public void shouldCreateForRS256() throws Exception {
         JwkProvider jwkProvider = mock(JwkProvider.class);
-        Auth0MVC.forRS256("domain", "clientId", "clientSecret", "token", jwkProvider);
+        AuthenticationController.forRS256("domain", "clientId", "clientSecret", "token", jwkProvider);
     }
 
     @Test
@@ -134,9 +134,9 @@ public class Auth0MVCTest {
         RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
         when(requestProcessorFactory.forCodeGrant("domain", "clientId", "clientSecret", "code")).thenReturn(requestProcessor);
 
-        Auth0MVC mvc = Auth0MVC.forHS256("domain", "clientId", "clientSecret", "code", requestProcessorFactory);
+        AuthenticationController controller = AuthenticationController.forHS256("domain", "clientId", "clientSecret", "code", requestProcessorFactory);
         HttpServletRequest req = new MockHttpServletRequest();
-        mvc.handle(req);
+        controller.handle(req);
 
         verify(requestProcessorFactory).forCodeGrant("domain", "clientId", "clientSecret", "code");
         verify(requestProcessor).process(req);
@@ -148,9 +148,9 @@ public class Auth0MVCTest {
         JwkProvider jwtProvider = mock(JwkProvider.class);
         when(requestProcessorFactory.forImplicitGrant("domain", "clientId", "clientSecret", "token", jwtProvider)).thenReturn(requestProcessor);
 
-        Auth0MVC mvc = Auth0MVC.forRS256("domain", "clientId", "clientSecret", "token", jwtProvider, requestProcessorFactory);
+        AuthenticationController controller = AuthenticationController.forRS256("domain", "clientId", "clientSecret", "token", jwtProvider, requestProcessorFactory);
         HttpServletRequest req = new MockHttpServletRequest();
-        mvc.handle(req);
+        controller.handle(req);
 
         verify(requestProcessorFactory).forImplicitGrant("domain", "clientId", "clientSecret", "token", jwtProvider);
         verify(requestProcessor).process(req);
@@ -161,9 +161,9 @@ public class Auth0MVCTest {
         RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
         when(requestProcessorFactory.forImplicitGrant("domain", "clientId", "clientSecret", "token")).thenReturn(requestProcessor);
 
-        Auth0MVC mvc = Auth0MVC.forHS256("domain", "clientId", "clientSecret", "token", requestProcessorFactory);
+        AuthenticationController controller = AuthenticationController.forHS256("domain", "clientId", "clientSecret", "token", requestProcessorFactory);
         HttpServletRequest req = new MockHttpServletRequest();
-        mvc.handle(req);
+        controller.handle(req);
 
         verify(requestProcessorFactory).forImplicitGrant("domain", "clientId", "clientSecret", "token");
         verify(requestProcessor).process(req);
@@ -175,25 +175,25 @@ public class Auth0MVCTest {
 
         RequestProcessorFactory requestProcessorFactory = mock(RequestProcessorFactory.class);
         when(requestProcessorFactory.forImplicitGrant("domain", "clientId", "clientSecret", "token")).thenThrow(UnsupportedEncodingException.class);
-        Auth0MVC.forHS256("domain", "clientId", "clientSecret", "token", requestProcessorFactory);
+        AuthenticationController.forHS256("domain", "clientId", "clientSecret", "token", requestProcessorFactory);
     }
 
     @Test
     public void shouldBuildAuthorizeUriWithCustomStateAndNonce() throws Exception {
-        Auth0MVC mvc = Auth0MVC.forHS256("domain", "clientId", "clientSecret", "token id_token", requestProcessorFactory);
+        AuthenticationController controller = AuthenticationController.forHS256("domain", "clientId", "clientSecret", "token id_token", requestProcessorFactory);
         HttpServletRequest req = new MockHttpServletRequest();
         when(requestProcessor.getResponseType()).thenReturn(Arrays.asList("token", "id_token"));
-        mvc.buildAuthorizeUrl(req, "https://redirect.uri/here", "state", "nonce");
+        controller.buildAuthorizeUrl(req, "https://redirect.uri/here", "state", "nonce");
 
         verify(requestProcessor).buildAuthorizeUrl("https://redirect.uri/here", "state", "nonce");
     }
 
     @Test
     public void shouldNotSaveNonceInSessionIfRequestTypeIsNotIdToken() throws Exception {
-        Auth0MVC mvc = Auth0MVC.forHS256("domain", "clientId", "clientSecret", "token", requestProcessorFactory);
+        AuthenticationController controller = AuthenticationController.forHS256("domain", "clientId", "clientSecret", "token", requestProcessorFactory);
         HttpServletRequest req = new MockHttpServletRequest();
         when(requestProcessor.getResponseType()).thenReturn(Collections.singletonList("token"));
-        mvc.buildAuthorizeUrl(req, "https://redirect.uri/here");
+        controller.buildAuthorizeUrl(req, "https://redirect.uri/here");
 
         ArgumentCaptor<String> stateCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> nonceCaptor = ArgumentCaptor.forClass(String.class);
@@ -209,10 +209,10 @@ public class Auth0MVCTest {
 
     @Test
     public void shouldSaveNonceInSessionIfRequestTypeIsIdToken() throws Exception {
-        Auth0MVC mvc = Auth0MVC.forHS256("domain", "clientId", "clientSecret", "token id_token", requestProcessorFactory);
+        AuthenticationController controller = AuthenticationController.forHS256("domain", "clientId", "clientSecret", "token id_token", requestProcessorFactory);
         HttpServletRequest req = new MockHttpServletRequest();
         when(requestProcessor.getResponseType()).thenReturn(Arrays.asList("token", "id_token"));
-        mvc.buildAuthorizeUrl(req, "https://redirect.uri/here");
+        controller.buildAuthorizeUrl(req, "https://redirect.uri/here");
 
         ArgumentCaptor<String> stateCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> nonceCaptor = ArgumentCaptor.forClass(String.class);

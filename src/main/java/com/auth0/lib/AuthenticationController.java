@@ -13,10 +13,10 @@ import java.util.List;
  * Base Auth0 Authenticator class
  */
 @SuppressWarnings("WeakerAccess")
-public class Auth0MVC {
+public class AuthenticationController {
     private final RequestProcessor requestProcessor;
 
-    private Auth0MVC(RequestProcessor requestProcessor) {
+    private AuthenticationController(RequestProcessor requestProcessor) {
         this.requestProcessor = requestProcessor;
     }
 
@@ -27,15 +27,15 @@ public class Auth0MVC {
      * @param clientId     the Auth0 client id
      * @param clientSecret the Auth0 client secret
      * @param responseType the response type to request and handle. Must contain either 'code' or 'token' at least.
-     * @return a new instance of Auth0MVC.
+     * @return a new instance of AuthenticationController.
      * @throws UnsupportedEncodingException if the Implicit Grant is going to be used and the environment doesn't support UTF-8 encoding.
      */
-    public static Auth0MVC forHS256(String domain, String clientId, String clientSecret, String responseType) throws UnsupportedEncodingException {
+    public static AuthenticationController forHS256(String domain, String clientId, String clientSecret, String responseType) throws UnsupportedEncodingException {
         return forHS256(domain, clientId, clientSecret, responseType, new RequestProcessorFactory());
     }
 
     //visible for testing
-    static Auth0MVC forHS256(String domain, String clientId, String clientSecret, String responseType, RequestProcessorFactory factory) throws UnsupportedEncodingException {
+    static AuthenticationController forHS256(String domain, String clientId, String clientSecret, String responseType, RequestProcessorFactory factory) throws UnsupportedEncodingException {
         return forResponseType(domain, clientId, clientSecret, responseType, null, factory);
     }
 
@@ -46,20 +46,20 @@ public class Auth0MVC {
      * @param clientId     the Auth0 client id
      * @param clientSecret the Auth0 client secret
      * @param responseType the response type to request and handle. Must contain either 'code' or 'token' at least.
-     * @return a new instance of Auth0MVC.
+     * @return a new instance of AuthenticationController.
      * @throws UnsupportedEncodingException if the Implicit Grant is going to be used and the environment doesn't support UTF-8 encoding.
      */
-    public static Auth0MVC forRS256(String domain, String clientId, String clientSecret, String responseType, JwkProvider provider) throws UnsupportedEncodingException {
+    public static AuthenticationController forRS256(String domain, String clientId, String clientSecret, String responseType, JwkProvider provider) throws UnsupportedEncodingException {
         Validate.notNull(provider);
         return forRS256(domain, clientId, clientSecret, responseType, provider, new RequestProcessorFactory());
     }
 
     //visible for testing
-    static Auth0MVC forRS256(String domain, String clientId, String clientSecret, String responseType, JwkProvider provider, RequestProcessorFactory factory) throws UnsupportedEncodingException {
+    static AuthenticationController forRS256(String domain, String clientId, String clientSecret, String responseType, JwkProvider provider, RequestProcessorFactory factory) throws UnsupportedEncodingException {
         return forResponseType(domain, clientId, clientSecret, responseType, provider, factory);
     }
 
-    private static Auth0MVC forResponseType(String domain, String clientId, String clientSecret, String responseType, JwkProvider provider, RequestProcessorFactory factory) throws UnsupportedEncodingException {
+    private static AuthenticationController forResponseType(String domain, String clientId, String clientSecret, String responseType, JwkProvider provider, RequestProcessorFactory factory) throws UnsupportedEncodingException {
         Validate.notNull(domain);
         Validate.notNull(clientId);
         Validate.notNull(clientSecret);
@@ -68,7 +68,7 @@ public class Auth0MVC {
 
         List<String> types = Arrays.asList(responseType.split(" "));
         if (types.contains("code")) {
-            return new Auth0MVC(factory.forCodeGrant(domain, clientId, clientSecret, responseType));
+            return new AuthenticationController(factory.forCodeGrant(domain, clientId, clientSecret, responseType));
         }
         if (types.contains("token")) {
             RequestProcessor processor;
@@ -77,7 +77,7 @@ public class Auth0MVC {
             } else {
                 processor = factory.forImplicitGrant(domain, clientId, clientSecret, responseType, provider);
             }
-            return new Auth0MVC(processor);
+            return new AuthenticationController(processor);
         }
         throw new IllegalArgumentException("Response Type must contain either 'code' or 'token'.");
     }
