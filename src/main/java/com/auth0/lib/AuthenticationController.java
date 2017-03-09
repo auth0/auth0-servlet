@@ -95,9 +95,9 @@ public class AuthenticationController {
      *
      * @param request the received request to process.
      * @return the Tokens obtained after the user authentication.
-     * @throws ProcessorException if an error occurred while processing the request
+     * @throws IdentityVerificationException if an error occurred while processing the request
      */
-    public Tokens handle(HttpServletRequest request) throws ProcessorException {
+    public Tokens handle(HttpServletRequest request) throws IdentityVerificationException {
         Validate.notNull(request);
 
         return requestProcessor.process(request);

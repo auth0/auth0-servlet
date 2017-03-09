@@ -67,9 +67,9 @@ class RequestProcessor {
      * 5). Clearing the stored state value.
      * 6). Handling success and any failure outcomes.
      *
-     * @throws ProcessorException if an error occurred while processing the request
+     * @throws IdentityVerificationException if an error occurred while processing the request
      */
-    Tokens process(HttpServletRequest req) throws ProcessorException {
+    Tokens process(HttpServletRequest req) throws IdentityVerificationException {
         assertNoError(req);
         assertValidState(req);
 
@@ -78,20 +78,20 @@ class RequestProcessor {
 
         String userId;
         if (authorizationCode == null && verifier == null) {
-            throw new ProcessorException("Authorization Code missing from the request and Implicit Grant not allowed.");
+            throw new InvalidRequestException("missing code", "Authorization Code is missing from the request and Implicit Grant is not allowed.");
         } else if (verifier != null) {
             if (getResponseType().contains("id_token")) {
                 String expectedNonce = RandomStorage.removeSessionNonce(req);
                 try {
                     userId = verifier.verifyNonce(tokens.getIdToken(), expectedNonce);
                 } catch (JwkException | JWTVerificationException e) {
-                    throw new ProcessorException("An error occurred while trying to verify the Id Token.", e);
+                    throw new IdentityVerificationException("An error occurred while trying to verify the Id Token.", e);
                 }
             } else {
                 try {
                     userId = fetchUserId(tokens.getAccessToken());
                 } catch (Auth0Exception e) {
-                    throw new ProcessorException("Couldn't verify the Access Token", e);
+                    throw new IdentityVerificationException("An error occurred while trying to verify the Access Token.", e);
                 }
             }
         } else {
@@ -101,12 +101,12 @@ class RequestProcessor {
                 tokens = mergeTokens(tokens, latestTokens);
                 userId = fetchUserId(tokens.getAccessToken());
             } catch (Auth0Exception e) {
-                throw new ProcessorException("Couldn't exchange the Authorization Code for Auth0 Tokens", e);
+                throw new IdentityVerificationException("An error occurred while exchanging the Authorization Code for Auth0 Tokens.", e);
             }
         }
 
         if (userId == null) {
-            throw new ProcessorException("Couldn't obtain the User Id.");
+            throw new IdentityVerificationException("An error occurred while trying to verify the user identity: The 'sub' claim contained in the token was null.");
         }
 
         return tokens;
@@ -127,12 +127,13 @@ class RequestProcessor {
      * Checks for the presence of an error in the request parameters
      *
      * @param req the request
-     * @throws ProcessorException if the request contains an error
+     * @throws InvalidRequestException if the request contains an error
      */
-    private void assertNoError(HttpServletRequest req) throws ProcessorException {
+    private void assertNoError(HttpServletRequest req) throws InvalidRequestException {
         String error = req.getParameter("error");
         if (error != null) {
-            throw new ProcessorException("The request contains an error: " + error);
+            String errorDescription = req.getParameter("error_description");
+            throw new InvalidRequestException(error, errorDescription);
         }
     }
 
@@ -140,13 +141,13 @@ class RequestProcessor {
      * Checks whether the state persisted in the session matches the state value received in the request parameters.
      *
      * @param req the request
-     * @throws ProcessorException if the request contains a different state from the expected one
+     * @throws InvalidRequestException if the request contains a different state from the expected one
      */
-    private void assertValidState(HttpServletRequest req) throws ProcessorException {
+    private void assertValidState(HttpServletRequest req) throws InvalidRequestException {
         String stateFromRequest = req.getParameter("state");
         boolean valid = RandomStorage.checkSessionState(req, stateFromRequest);
         if (!valid) {
-            throw new ProcessorException("The request contains an invalid state");
+            throw new InvalidRequestException("invalid state");
         }
     }
 

@@ -68,7 +68,7 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowIfRequestHasError() throws Exception {
-        exception.expect(ProcessorException.class);
+        exception.expect(InvalidRequestException.class);
         exception.expectMessage("The request contains an error: something happened");
 
         Map<String, Object> params = new HashMap<>();
@@ -81,8 +81,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowIfRequestHasInvalidState() throws Exception {
-        exception.expect(ProcessorException.class);
-        exception.expectMessage("The request contains an invalid state");
+        exception.expect(InvalidRequestException.class);
+        exception.expectMessage("The request contains an error: invalid state");
 
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
@@ -97,8 +97,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowOnMissingCodeAndImplicitGrantNotAllowed() throws Exception {
-        exception.expect(ProcessorException.class);
-        exception.expectMessage("Implicit Grant not allowed.");
+        exception.expect(InvalidRequestException.class);
+        exception.expectMessage("The request contains an error: missing code");
 
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
@@ -134,7 +134,7 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowOnFailToVerifyIdTokenOnImplicitGrant() throws Exception {
-        exception.expect(ProcessorException.class);
+        exception.expect(IdentityVerificationException.class);
         exception.expectMessage("An error occurred while trying to verify the Id Token.");
 
         Map<String, Object> params = new HashMap<>();
@@ -154,8 +154,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowIfNullUserIdOnVerifyIdTokenOnImplicitGrant() throws Exception {
-        exception.expect(ProcessorException.class);
-        exception.expectMessage("Couldn't obtain the User Id.");
+        exception.expect(IdentityVerificationException.class);
+        exception.expectMessage("An error occurred while trying to verify the user identity: The 'sub' claim contained in the token was null.");
 
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
@@ -194,8 +194,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowOnFailToVerifyAccessTokenOnImplicitGrant() throws Exception {
-        exception.expect(ProcessorException.class);
-        exception.expectMessage("Couldn't verify the Access Token");
+        exception.expect(IdentityVerificationException.class);
+        exception.expectMessage("An error occurred while trying to verify the Access Token.");
 
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
@@ -213,8 +213,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowIfNullUserIdOnFailToVerifyAccessTokenOnImplicitGrant() throws Exception {
-        exception.expect(ProcessorException.class);
-        exception.expectMessage("Couldn't obtain the User Id.");
+        exception.expect(IdentityVerificationException.class);
+        exception.expectMessage("An error occurred while trying to verify the user identity: The 'sub' claim contained in the token was null.");
 
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
@@ -285,8 +285,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowOnExchangeTheAuthorizationCodeOnCodeGrant() throws Exception {
-        exception.expect(ProcessorException.class);
-        exception.expectMessage("Couldn't exchange the Authorization Code for Auth0 Tokens");
+        exception.expect(IdentityVerificationException.class);
+        exception.expectMessage("An error occurred while exchanging the Authorization Code for Auth0 Tokens.");
 
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");
@@ -304,8 +304,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldThrowOnFetchTheUserIdOnCodeGrant() throws Exception {
-        exception.expect(ProcessorException.class);
-        exception.expectMessage("Couldn't exchange the Authorization Code for Auth0 Tokens");
+        exception.expect(IdentityVerificationException.class);
+        exception.expectMessage("An error occurred while exchanging the Authorization Code for Auth0 Tokens.");
 
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");
@@ -325,8 +325,8 @@ public class RequestProcessorTest {
 
     @Test
     public void shouldFailToGetTheUserIdOnCodeGrant() throws Exception {
-        exception.expect(ProcessorException.class);
-        exception.expectMessage("Couldn't obtain the User Id.");
+        exception.expect(IdentityVerificationException.class);
+        exception.expectMessage("An error occurred while trying to verify the user identity: The 'sub' claim contained in the token was null.");
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");
         params.put("state", "1234");

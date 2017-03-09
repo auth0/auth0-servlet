@@ -1,7 +1,7 @@
 package com.auth0.example;
 
 import com.auth0.lib.AuthenticationController;
-import com.auth0.lib.ProcessorException;
+import com.auth0.lib.IdentityVerificationException;
 import com.auth0.lib.SessionUtils;
 import com.auth0.lib.Tokens;
 
@@ -66,7 +66,7 @@ public class Auth0RedirectServlet extends HttpServlet {
         try {
             Tokens tokens = authenticationController.handle(req);
             SessionUtils.set(req, "accessToken", tokens.getAccessToken());
-        } catch (ProcessorException e) {
+        } catch (IdentityVerificationException e) {
             e.printStackTrace();
             res.sendRedirect(req.getContextPath() + redirectOnFail);
             return;
@@ -89,7 +89,7 @@ public class Auth0RedirectServlet extends HttpServlet {
         try {
             Tokens tokens = authenticationController.handle(req);
             SessionUtils.set(req, "accessToken", tokens.getAccessToken());
-        } catch (ProcessorException e) {
+        } catch (IdentityVerificationException e) {
             e.printStackTrace();
             res.sendRedirect(req.getContextPath() + redirectOnFail);
             return;
