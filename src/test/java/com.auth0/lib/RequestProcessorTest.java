@@ -4,6 +4,7 @@ import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.auth.UserInfo;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.net.AuthRequest;
 import com.auth0.net.Request;
 import org.hamcrest.CoreMatchers;
@@ -122,7 +123,7 @@ public class RequestProcessorTest {
 
         when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn("auth0|user123");
 
-        RequestProcessor handler = new RequestProcessor(client, "token", verifier);
+        RequestProcessor handler = new RequestProcessor(client, "token id_token", verifier);
         Tokens tokens = handler.process(req);
 
         verify(client, never()).userInfo(anyString());
@@ -135,6 +136,27 @@ public class RequestProcessorTest {
     @Test
     public void shouldThrowOnFailToVerifyIdTokenOnImplicitGrant() throws Exception {
         exception.expect(ProcessorException.class);
+        exception.expectMessage("An error occurred while trying to verify the Id Token.");
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("state", "1234");
+        params.put("access_token", "theAccessToken");
+        params.put("id_token", "theIdToken");
+        HttpServletRequest req = getRequest(params);
+        SessionUtils.setSessionState(req, "1234");
+        SessionUtils.setSessionNonce(req, "nnnccc");
+        when(verifier.verifyNonce("theIdToken", "nnnccc")).thenThrow(JWTVerificationException.class);
+
+        RequestProcessor handler = new RequestProcessor(client, "token id_token", verifier);
+        handler.process(req);
+
+        verify(client, never()).userInfo(anyString());
+        assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
+    }
+
+    @Test
+    public void shouldThrowIfNullUserIdOnVerifyIdTokenOnImplicitGrant() throws Exception {
+        exception.expect(ProcessorException.class);
         exception.expectMessage("Couldn't obtain the User Id.");
 
         Map<String, Object> params = new HashMap<>();
@@ -146,13 +168,76 @@ public class RequestProcessorTest {
 
         when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn(null);
 
-        RequestProcessor handler = new RequestProcessor(client, "token", verifier);
+        RequestProcessor handler = new RequestProcessor(client, "token id_token", verifier);
         handler.process(req);
+
 
         verify(client, never()).userInfo(anyString());
         assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
     }
 
+    @Test
+    public void shouldVerifyAccessTokenOnImplicitGrant() throws Exception {
+        Map<String, Object> params = new HashMap<>();
+        params.put("state", "1234");
+        params.put("access_token", "theAccessToken");
+        HttpServletRequest req = getRequest(params);
+        SessionUtils.setSessionState(req, "1234");
+        when(client.userInfo("theAccessToken")).thenReturn(userInfoRequest);
+
+        RequestProcessor handler = new RequestProcessor(client, "token", verifier);
+        Tokens tokens = handler.process(req);
+
+        verifyNoMoreInteractions(verifier);
+        verify(client).userInfo("theAccessToken");
+        assertThat(tokens, is(notNullValue()));
+        assertThat(tokens.getAccessToken(), is("theAccessToken"));
+        assertThat(tokens.getIdToken(), is(nullValue()));
+        assertThat(SessionUtils.getSessionUserId(req), is("auth0|user123"));
+    }
+
+    @Test
+    public void shouldThrowOnFailToVerifyAccessTokenOnImplicitGrant() throws Exception {
+        exception.expect(ProcessorException.class);
+        exception.expectMessage("Couldn't verify the Access Token");
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("state", "1234");
+        params.put("access_token", "theAccessToken");
+        HttpServletRequest req = getRequest(params);
+        SessionUtils.setSessionState(req, "1234");
+        when(client.userInfo("theAccessToken")).thenThrow(Auth0Exception.class);
+
+        RequestProcessor handler = new RequestProcessor(client, "token", verifier);
+        handler.process(req);
+
+        verifyNoMoreInteractions(verifier);
+        verify(client, never()).userInfo(anyString());
+        assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
+    }
+
+    @Test
+    public void shouldThrowIfNullUserIdOnFailToVerifyAccessTokenOnImplicitGrant() throws Exception {
+        exception.expect(ProcessorException.class);
+        exception.expectMessage("Couldn't obtain the User Id.");
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("state", "1234");
+        params.put("access_token", "theAccessToken");
+        HttpServletRequest req = getRequest(params);
+        SessionUtils.setSessionState(req, "1234");
+        Request userInfoRequest = mock(Request.class);
+        when(userInfo.getValues()).thenReturn(Collections.<String, Object>emptyMap());
+        when(userInfoRequest.execute()).thenReturn(userInfo);
+        when(client.userInfo("theAccessToken")).thenReturn(userInfoRequest);
+
+        RequestProcessor handler = new RequestProcessor(client, "token", verifier);
+        handler.process(req);
+
+        verifyNoMoreInteractions(verifier);
+        verify(client, never()).userInfo(anyString());
+        assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
+    }
 
     //Code Grant
 

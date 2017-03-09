@@ -80,11 +80,19 @@ class RequestProcessor {
         if (authorizationCode == null && verifier == null) {
             throw new ProcessorException("Authorization Code missing from the request and Implicit Grant not allowed.");
         } else if (verifier != null) {
-            String expectedNonce = SessionUtils.removeSessionNonce(req);
-            try {
-                userId = verifier.verifyNonce(tokens.getIdToken(), expectedNonce);
-            } catch (JwkException | JWTVerificationException e) {
-                throw new ProcessorException("An error occurred while trying to verify the Id Token.", e);
+            if (getResponseType().contains("id_token")) {
+                String expectedNonce = SessionUtils.removeSessionNonce(req);
+                try {
+                    userId = verifier.verifyNonce(tokens.getIdToken(), expectedNonce);
+                } catch (JwkException | JWTVerificationException e) {
+                    throw new ProcessorException("An error occurred while trying to verify the Id Token.", e);
+                }
+            } else {
+                try {
+                    userId = fetchUserId(tokens.getAccessToken());
+                } catch (Auth0Exception e) {
+                    throw new ProcessorException("Couldn't verify the Access Token", e);
+                }
             }
         } else {
             String redirectUri = req.getRequestURL().toString();
