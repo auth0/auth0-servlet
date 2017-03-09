@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import static com.auth0.ConfigUtils.readLocalRequiredParameter;
 import static com.auth0.ConfigUtils.readRequiredParameter;
@@ -50,13 +51,11 @@ public class Auth0RedirectServlet extends HttpServlet {
         String clientId = readRequiredParameter("com.auth0.client_id", config);
         String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
 
-        auth0MVC = Auth0MVC.forCodeGrant(domain, clientId, clientSecret);
-    }
-
-    @Override
-    public void destroy() {
-        super.destroy();
-        auth0MVC = null;
+        try {
+            auth0MVC = Auth0MVC.forHS256(domain, clientId, clientSecret, "code");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

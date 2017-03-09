@@ -49,14 +49,20 @@ public class RequestProcessorTest {
     }
 
     @Test
-    public void shouldThrowOnMissingAPIClientHelper() throws Exception {
+    public void shouldThrowOnMissingAuthAPI() throws Exception {
         exception.expect(NullPointerException.class);
-        new RequestProcessor(null, null);
+        new RequestProcessor(null, "responseType", verifier);
+    }
+
+    @Test
+    public void shouldThrowOnMissingResponseType() throws Exception {
+        exception.expect(NullPointerException.class);
+        new RequestProcessor(client, null, verifier);
     }
 
     @Test
     public void shouldNotThrowOnMissingTokenVerifier() throws Exception {
-        new RequestProcessor(client, null);
+        new RequestProcessor(client, "responseType", null);
     }
 
     @Test
@@ -68,7 +74,7 @@ public class RequestProcessorTest {
         params.put("error", "something happened");
         HttpServletRequest req = getRequest(params);
 
-        RequestProcessor handler = new RequestProcessor(client);
+        RequestProcessor handler = new RequestProcessor(client, "responseType", null);
         handler.process(req);
     }
 
@@ -82,7 +88,7 @@ public class RequestProcessorTest {
         HttpServletRequest req = getRequest(params);
         SessionUtils.setSessionState(req, "9999");
 
-        RequestProcessor handler = new RequestProcessor(client);
+        RequestProcessor handler = new RequestProcessor(client, "responseType", null);
         handler.process(req);
     }
 
@@ -100,7 +106,7 @@ public class RequestProcessorTest {
         HttpServletRequest req = getRequest(params);
         SessionUtils.setSessionState(req, "1234");
 
-        RequestProcessor handler = new RequestProcessor(client);
+        RequestProcessor handler = new RequestProcessor(client, "code", null);
         handler.process(req);
     }
 
@@ -116,7 +122,7 @@ public class RequestProcessorTest {
 
         when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn("auth0|user123");
 
-        RequestProcessor handler = new RequestProcessor(client, verifier);
+        RequestProcessor handler = new RequestProcessor(client, "token", verifier);
         Tokens tokens = handler.process(req);
 
         verify(client, never()).userInfo(anyString());
@@ -140,7 +146,7 @@ public class RequestProcessorTest {
 
         when(verifier.verifyNonce("theIdToken", "nnnccc")).thenReturn(null);
 
-        RequestProcessor handler = new RequestProcessor(client, verifier);
+        RequestProcessor handler = new RequestProcessor(client, "token", verifier);
         handler.process(req);
 
         verify(client, never()).userInfo(anyString());
@@ -163,7 +169,7 @@ public class RequestProcessorTest {
         when(client.exchangeCode("abc123", "https://me.auth0.com:80/callback")).thenReturn(codeExchangeRequest);
         when(client.userInfo("theAccessToken")).thenReturn(userInfoRequest);
 
-        RequestProcessor handler = new RequestProcessor(client);
+        RequestProcessor handler = new RequestProcessor(client, "code", null);
         Tokens tokens = handler.process(req);
         verify(client).exchangeCode("abc123", "https://me.auth0.com:80/callback");
         verify(client).userInfo("theAccessToken");
@@ -189,7 +195,7 @@ public class RequestProcessorTest {
         when(codeExchangeRequest.execute()).thenReturn(holder);
         when(client.userInfo("theBestAccessToken")).thenReturn(userInfoRequest);
 
-        RequestProcessor handler = new RequestProcessor(client);
+        RequestProcessor handler = new RequestProcessor(client, "code", null);
         Tokens tokens = handler.process(req);
         verify(client).exchangeCode("abc123", "https://me.auth0.com:80/callback");
         verify(client).userInfo("theBestAccessToken");
@@ -214,7 +220,7 @@ public class RequestProcessorTest {
         SessionUtils.setSessionState(req, "1234");
         when(client.exchangeCode("abc123", "https://me.auth0.com:80/callback")).thenThrow(Auth0Exception.class);
 
-        RequestProcessor handler = new RequestProcessor(client);
+        RequestProcessor handler = new RequestProcessor(client, "code", null);
         handler.process(req);
         verify(client).exchangeCode("abc123", "https://me.auth0.com:80/callback");
         assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
@@ -236,7 +242,7 @@ public class RequestProcessorTest {
         when(client.exchangeCode("abc123", "https://me.auth0.com:80/callback")).thenReturn(codeExchangeRequest);
         when(client.userInfo("theAccessToken")).thenThrow(Auth0Exception.class);
 
-        RequestProcessor handler = new RequestProcessor(client);
+        RequestProcessor handler = new RequestProcessor(client, "code", null);
         handler.process(req);
         verify(client).userInfo("theAccessToken");
         assertThat(SessionUtils.getSessionUserId(req), is(nullValue()));
@@ -257,7 +263,7 @@ public class RequestProcessorTest {
         when(userInfo.getValues()).thenReturn(Collections.<String, Object>emptyMap());
         when(client.userInfo("theAccessToken")).thenReturn(userInfoRequest);
 
-        RequestProcessor handler = new RequestProcessor(client);
+        RequestProcessor handler = new RequestProcessor(client, "code", null);
         handler.process(req);
         verify(client).userInfo("theAccessToken");
 
@@ -267,14 +273,14 @@ public class RequestProcessorTest {
     @Test
     public void shouldBuildAuthorizeUrl() throws Exception {
         AuthAPI client = new AuthAPI("me.auth0.com", "clientId", "clientSecret");
-        RequestProcessor handler = new RequestProcessor(client);
-        String authorizeUrl = handler.buildAuthorizeUrl("https://redirect.uri/here", "responseType", "state", "nonce");
+        RequestProcessor handler = new RequestProcessor(client, "code", null);
+        String authorizeUrl = handler.buildAuthorizeUrl("https://redirect.uri/here", "state", "nonce");
 
         assertThat(authorizeUrl, is(notNullValue()));
         assertThat(authorizeUrl, CoreMatchers.startsWith("https://me.auth0.com/authorize?"));
         assertThat(authorizeUrl, containsString("client_id=clientId"));
         assertThat(authorizeUrl, containsString("redirect_uri=https://redirect.uri/here"));
-        assertThat(authorizeUrl, containsString("response_type=responseType"));
+        assertThat(authorizeUrl, containsString("response_type=code"));
         assertThat(authorizeUrl, containsString("state=state"));
         assertThat(authorizeUrl, not(containsString("nonce=nonce")));
     }
@@ -282,8 +288,8 @@ public class RequestProcessorTest {
     @Test
     public void shouldBuildAuthorizeUrlWithNonceIfResponseTypeIsIdToken() throws Exception {
         AuthAPI client = new AuthAPI("me.auth0.com", "clientId", "clientSecret");
-        RequestProcessor handler = new RequestProcessor(client);
-        String authorizeUrl = handler.buildAuthorizeUrl("https://redirect.uri/here", "id_token", "state", "nonce");
+        RequestProcessor handler = new RequestProcessor(client, "id_token", null);
+        String authorizeUrl = handler.buildAuthorizeUrl("https://redirect.uri/here", "state", "nonce");
 
         assertThat(authorizeUrl, is(notNullValue()));
         assertThat(authorizeUrl, CoreMatchers.startsWith("https://me.auth0.com/authorize?"));

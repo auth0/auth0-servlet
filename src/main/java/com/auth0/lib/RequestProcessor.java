@@ -9,6 +9,8 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import org.apache.commons.lang3.Validate;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Main class to handle the Authorize Redirect request.
@@ -19,36 +21,37 @@ class RequestProcessor {
 
     //Visible for testing
     final AuthAPI client;
+    final String responseType;
     final TokenVerifier verifier;
 
-    //Implicit
-    RequestProcessor(AuthAPI client, TokenVerifier verifier) {
+    RequestProcessor(AuthAPI client, String responseType, TokenVerifier verifier) {
         Validate.notNull(client);
+        Validate.notNull(responseType);
         this.client = client;
+        this.responseType = responseType;
         this.verifier = verifier;
     }
 
-    //Code
-    RequestProcessor(AuthAPI client) {
-        this(client, null);
+    List<String> getResponseType() {
+        return Arrays.asList(responseType.split(" "));
     }
 
     /**
      * Builds an Auth0 Authorize Url ready to call with the given parameters.
      *
-     * @param redirectUri  the url to call with the authentication result.
-     * @param responseType the response type to request. It's strongly encouraged to use 'code'.
-     * @param state        a valid state value.
-     * @param nonce        the nonce value that will be used if the response type contains 'id_token'. Can be null.
+     * @param redirectUri the url to call with the authentication result.
+     * @param state       a valid state value.
+     * @param nonce       the nonce value that will be used if the response type contains 'id_token'. Can be null.
      * @return the authorize url ready to call.
      */
-    String buildAuthorizeUrl(String redirectUri, String responseType, String state, String nonce) {
+    String buildAuthorizeUrl(String redirectUri, String state, String nonce) {
         String authorizeUrl = client
                 .authorizeUrl(redirectUri)
                 .withState(state)
                 .build();
+
         authorizeUrl = authorizeUrl.replace("response_type=code", "response_type=" + responseType);
-        if (responseType.contains("id_token") && nonce != null) {
+        if (getResponseType().contains("id_token")) {
             authorizeUrl = authorizeUrl.concat("&nonce=" + nonce);
         }
         return authorizeUrl;
