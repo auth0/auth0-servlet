@@ -14,6 +14,6 @@ public abstract class Auth0MVCProvider {
         String clientId = readRequiredParameter("com.auth0.client_id", config);
         String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
 
-        return AuthenticationController.forHS256(domain, clientId, clientSecret, "code");
+        return AuthenticationController.newBuilder(domain, clientId, clientSecret).build();
     }
 }

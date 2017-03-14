@@ -14,6 +14,10 @@ import java.util.List;
  */
 @SuppressWarnings("WeakerAccess")
 public class AuthenticationController {
+    private static final String RESPONSE_TYPE_CODE = "code";
+    private static final String RESPONSE_TYPE_TOKEN = "token";
+    private static final String RESPONSE_TYPE_ID_TOKEN = "id_token";
+
     private final RequestProcessor requestProcessor;
 
     private AuthenticationController(RequestProcessor requestProcessor) {
@@ -21,66 +25,92 @@ public class AuthenticationController {
     }
 
     /**
-     * Create a new instance that will handle both Code Grant and Implicit Grant flows using either Code Exchange or verifying the token's signature with HS256 algorithm.
+     * Create a new Builder instance to configure the AuthenticationController response type and algorithm used on the verification.
+     * By default it will request Code Grant, but if the response type is changed to 'token' it will handle the Implicit Grant with the
+     * algorithm HS256 using as secret the provided Client Secret.
      *
      * @param domain       the Auth0 domain
      * @param clientId     the Auth0 client id
      * @param clientSecret the Auth0 client secret
-     * @param responseType the response type to request and handle. Must contain either 'code' or 'token' at least.
-     * @return a new instance of AuthenticationController.
-     * @throws UnsupportedEncodingException if the Implicit Grant is going to be used and the environment doesn't support UTF-8 encoding.
+     * @return a new Builder instance ready to configure
      */
-    public static AuthenticationController forHS256(String domain, String clientId, String clientSecret, String responseType) throws UnsupportedEncodingException {
-        return forHS256(domain, clientId, clientSecret, responseType, new RequestProcessorFactory());
+    public static AuthenticationControllerBuilder newBuilder(String domain, String clientId, String clientSecret) {
+        return new AuthenticationControllerBuilder(domain, clientId, clientSecret);
     }
 
-    //visible for testing
-    static AuthenticationController forHS256(String domain, String clientId, String clientSecret, String responseType, RequestProcessorFactory factory) throws UnsupportedEncodingException {
-        return forResponseType(domain, clientId, clientSecret, responseType, null, factory);
-    }
+    public static class AuthenticationControllerBuilder {
+        private final String domain;
+        private final String clientId;
+        private final String clientSecret;
+        private String responseType;
+        private JwkProvider jwkProvider;
 
-    /**
-     * Create a new instance that will handle both Code Grant and Implicit Grant flows using either Code Exchange or verifying the token's signature with RS256 algorithm.
-     *
-     * @param domain       the Auth0 domain
-     * @param clientId     the Auth0 client id
-     * @param clientSecret the Auth0 client secret
-     * @param responseType the response type to request and handle. Must contain either 'code' or 'token' at least.
-     * @return a new instance of AuthenticationController.
-     * @throws UnsupportedEncodingException if the Implicit Grant is going to be used and the environment doesn't support UTF-8 encoding.
-     */
-    public static AuthenticationController forRS256(String domain, String clientId, String clientSecret, String responseType, JwkProvider provider) throws UnsupportedEncodingException {
-        Validate.notNull(provider);
-        return forRS256(domain, clientId, clientSecret, responseType, provider, new RequestProcessorFactory());
-    }
+        AuthenticationControllerBuilder(String domain, String clientId, String clientSecret) {
+            Validate.notNull(domain);
+            Validate.notNull(clientId);
+            Validate.notNull(clientSecret);
 
-    //visible for testing
-    static AuthenticationController forRS256(String domain, String clientId, String clientSecret, String responseType, JwkProvider provider, RequestProcessorFactory factory) throws UnsupportedEncodingException {
-        return forResponseType(domain, clientId, clientSecret, responseType, provider, factory);
-    }
-
-    private static AuthenticationController forResponseType(String domain, String clientId, String clientSecret, String responseType, JwkProvider provider, RequestProcessorFactory factory) throws UnsupportedEncodingException {
-        Validate.notNull(domain);
-        Validate.notNull(clientId);
-        Validate.notNull(clientSecret);
-        Validate.notNull(responseType);
-        responseType = responseType.trim().toLowerCase();
-
-        List<String> types = Arrays.asList(responseType.split(" "));
-        if (types.contains("code")) {
-            return new AuthenticationController(factory.forCodeGrant(domain, clientId, clientSecret, responseType));
+            this.domain = domain;
+            this.clientId = clientId;
+            this.clientSecret = clientSecret;
+            this.responseType = RESPONSE_TYPE_CODE;
         }
-        if (types.contains("token")) {
-            RequestProcessor processor;
-            if (provider == null) {
-                processor = factory.forImplicitGrant(domain, clientId, clientSecret, responseType);
-            } else {
-                processor = factory.forImplicitGrant(domain, clientId, clientSecret, responseType, provider);
+
+        /**
+         * Change the response type to request in the Authorization step. Default value is 'code'.
+         *
+         * @param responseType the response type to request. Must contain at least 'code' or 'token' but can be combined with 'code', 'id_token' and 'token', using a space as separator.
+         * @return this same builder instance.
+         */
+        public AuthenticationControllerBuilder withResponseType(String responseType) {
+            Validate.notNull(responseType);
+            this.responseType = responseType;
+            return this;
+        }
+
+        /**
+         * Sets the Jwk Provider that will return the Public Key required to verify the token in case of Implicit Grant flows.
+         * This is required if the Auth0 Client is signing the tokens with the RS256 algorithm.
+         *
+         * @param jwkProvider a valid Jwk provider.
+         * @return this same builder instance.
+         */
+        public AuthenticationControllerBuilder withJwkProvider(JwkProvider jwkProvider) {
+            Validate.notNull(jwkProvider);
+            this.jwkProvider = jwkProvider;
+            return this;
+        }
+
+        /**
+         * Create a new AuthenticationController instance that will handle both Code Grant and Implicit Grant flows using either Code Exchange or verifying the token's signature.
+         *
+         * @return a new instance of AuthenticationController.
+         * @throws UnsupportedEncodingException if the Implicit Grant is chosen and the environment doesn't support UTF-8 encoding.
+         */
+        public AuthenticationController build() throws UnsupportedEncodingException {
+            return build(new RequestProcessorFactory());
+        }
+
+        //Visible for testing
+        AuthenticationController build(RequestProcessorFactory factory) throws UnsupportedEncodingException {
+            responseType = responseType.trim().toLowerCase();
+            List<String> types = Arrays.asList(responseType.split(" "));
+            if (types.contains(RESPONSE_TYPE_CODE)) {
+                return new AuthenticationController(factory.forCodeGrant(domain, clientId, clientSecret, responseType));
             }
-            return new AuthenticationController(processor);
+            if (types.contains(RESPONSE_TYPE_TOKEN)) {
+                RequestProcessor processor;
+                if (jwkProvider == null) {
+                    processor = factory.forImplicitGrant(domain, clientId, clientSecret, responseType);
+                } else {
+                    processor = factory.forImplicitGrant(domain, clientId, clientSecret, responseType, jwkProvider);
+                }
+                return new AuthenticationController(processor);
+            }
+            throw new IllegalArgumentException("Response Type must contain either 'code' or 'token'.");
         }
-        throw new IllegalArgumentException("Response Type must contain either 'code' or 'token'.");
     }
+
 
     /**
      * Entrypoint for HTTP request
@@ -131,7 +161,7 @@ public class AuthenticationController {
         Validate.notNull(state);
 
         RandomStorage.setSessionState(request, state);
-        if (requestProcessor.getResponseType().contains("id_token") && nonce != null) {
+        if (requestProcessor.getResponseType().contains(RESPONSE_TYPE_ID_TOKEN) && nonce != null) {
             RandomStorage.setSessionNonce(request, nonce);
         }
         return requestProcessor.buildAuthorizeUrl(redirectUri, state, nonce);
