@@ -81,7 +81,7 @@ public class AuthenticationControllerTest {
     @Test
     public void shouldThrowOnInvalidResponseType() throws Exception {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage("Response Type must contain either 'code' or 'token'.");
+        exception.expectMessage("Response Type must contain any combination of 'code', 'token' or 'id_token'.");
 
         AuthenticationController.newBuilder("domain", "clientId", "clientSecret")
                 .withResponseType("responseType")
@@ -95,9 +95,24 @@ public class AuthenticationControllerTest {
     }
 
     @Test
-    public void shouldCreateWithResponseType() throws Exception {
+    public void shouldAcceptAnyValidResponseType() throws Exception {
+        AuthenticationController.newBuilder("domain", "clientId", "clientSecret")
+                .withResponseType("code")
+                .build();
+        AuthenticationController.newBuilder("domain", "clientId", "clientSecret")
+                .withResponseType("id_token")
+                .build();
+        AuthenticationController.newBuilder("domain", "clientId", "clientSecret")
+                .withResponseType("token")
+                .build();
         AuthenticationController.newBuilder("domain", "clientId", "clientSecret")
                 .withResponseType("token id_token")
+                .build();
+        AuthenticationController.newBuilder("domain", "clientId", "clientSecret")
+                .withResponseType("token code")
+                .build();
+        AuthenticationController.newBuilder("domain", "clientId", "clientSecret")
+                .withResponseType("token id_token code")
                 .build();
     }
 
@@ -189,7 +204,7 @@ public class AuthenticationControllerTest {
     @Test
     public void shouldBuildAuthorizeUriWithCustomStateAndNonce() throws Exception {
         AuthenticationController controller = AuthenticationController.newBuilder("domain", "clientId", "clientSecret")
-                .withResponseType("token id_token")
+                .withResponseType("id_token")
                 .build(requestProcessorFactory);
 
         HttpServletRequest req = new MockHttpServletRequest();
@@ -224,7 +239,7 @@ public class AuthenticationControllerTest {
     @Test
     public void shouldSaveNonceInSessionIfRequestTypeIsIdToken() throws Exception {
         AuthenticationController controller = AuthenticationController.newBuilder("domain", "clientId", "clientSecret")
-                .withResponseType("token id_token")
+                .withResponseType("id_token")
                 .build(requestProcessorFactory);
 
         HttpServletRequest req = new MockHttpServletRequest();

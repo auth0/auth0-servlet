@@ -59,7 +59,7 @@ public class AuthenticationController {
         /**
          * Change the response type to request in the Authorization step. Default value is 'code'.
          *
-         * @param responseType the response type to request. Must contain at least 'code' or 'token' but can be combined with 'code', 'id_token' and 'token', using a space as separator.
+         * @param responseType the response type to request. Any combination of 'code', 'token' and 'id_token' is allowed, using a space as separator.
          * @return this same builder instance.
          */
         public AuthenticationControllerBuilder withResponseType(String responseType) {
@@ -98,7 +98,7 @@ public class AuthenticationController {
             if (types.contains(RESPONSE_TYPE_CODE)) {
                 return new AuthenticationController(factory.forCodeGrant(domain, clientId, clientSecret, responseType));
             }
-            if (types.contains(RESPONSE_TYPE_TOKEN)) {
+            if (types.contains(RESPONSE_TYPE_TOKEN) || types.contains(RESPONSE_TYPE_ID_TOKEN)) {
                 RequestProcessor processor;
                 if (jwkProvider == null) {
                     processor = factory.forImplicitGrant(domain, clientId, clientSecret, responseType);
@@ -107,7 +107,7 @@ public class AuthenticationController {
                 }
                 return new AuthenticationController(processor);
             }
-            throw new IllegalArgumentException("Response Type must contain either 'code' or 'token'.");
+            throw new IllegalArgumentException("Response Type must contain any combination of 'code', 'token' or 'id_token'.");
         }
     }
 
@@ -152,7 +152,7 @@ public class AuthenticationController {
      * @param request     the caller request. Used to keep the session.
      * @param redirectUri the url to call with the authentication result.
      * @param state       a valid state value.
-     * @param nonce       the nonce value that will be used if the response type contains 'id_token'. Can be null.
+     * @param nonce       the nonce value that will be used if the response type contains 'id_token'. If this is not the case, it can be null.
      * @return the authorize url ready to call.
      */
     public String buildAuthorizeUrl(HttpServletRequest request, String redirectUri, String state, String nonce) {
