@@ -1,7 +1,9 @@
-package com.auth0;
+package com.auth0.example;
 
-import com.auth0.lib.Auth0MVC;
-import com.auth0.lib.ProcessorException;
+import com.auth0.lib.AuthenticationController;
+import com.auth0.lib.IdentityVerificationException;
+import com.auth0.lib.SessionUtils;
+import com.auth0.lib.Tokens;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -9,9 +11,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-
-import static com.auth0.ConfigUtils.readLocalRequiredParameter;
-import static com.auth0.ConfigUtils.readRequiredParameter;
+import java.io.UnsupportedEncodingException;
 
 /**
  * The Servlet endpoint used as the callback handler in the OAuth 2.0 authorization code grant flow.
@@ -22,7 +22,7 @@ public class Auth0RedirectServlet extends HttpServlet {
 
     private String redirectOnSuccess;
     private String redirectOnFail;
-    private Auth0MVC auth0MVC;
+    private AuthenticationController authenticationController;
 
 
     /**
@@ -43,21 +43,14 @@ public class Auth0RedirectServlet extends HttpServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        redirectOnSuccess = readLocalRequiredParameter("com.auth0.redirect_on_success", config);
-        redirectOnFail = readLocalRequiredParameter("com.auth0.redirect_on_error", config);
+        redirectOnSuccess = ConfigUtils.readLocalRequiredParameter("com.auth0.redirect_on_success", config);
+        redirectOnFail = ConfigUtils.readLocalRequiredParameter("com.auth0.redirect_on_error", config);
 
-        String domain = readRequiredParameter("com.auth0.domain", config);
-        String clientId = readRequiredParameter("com.auth0.client_id", config);
-        String clientSecret = readRequiredParameter("com.auth0.client_secret", config);
-        String certificatePath = config.getServletContext().getContextPath() + config.getInitParameter("com.auth0.certificate");
-
-        auth0MVC = Auth0MVC.forCodeGrant(domain, clientId, clientSecret);
-    }
-
-    @Override
-    public void destroy() {
-        super.destroy();
-        auth0MVC = null;
+        try {
+            authenticationController = Auth0MVCProvider.getInstance(config);
+        } catch (UnsupportedEncodingException e) {
+            throw new ServletException("Couldn't create the AuthenticationController instance. Check the configuration.", e);
+        }
     }
 
     /**
@@ -71,8 +64,9 @@ public class Auth0RedirectServlet extends HttpServlet {
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         try {
-            auth0MVC.handle(req);
-        } catch (ProcessorException e) {
+            Tokens tokens = authenticationController.handle(req);
+            SessionUtils.set(req, "accessToken", tokens.getAccessToken());
+        } catch (IdentityVerificationException e) {
             e.printStackTrace();
             res.sendRedirect(req.getContextPath() + redirectOnFail);
             return;
@@ -93,8 +87,9 @@ public class Auth0RedirectServlet extends HttpServlet {
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         try {
-            auth0MVC.handle(req);
-        } catch (ProcessorException e) {
+            Tokens tokens = authenticationController.handle(req);
+            SessionUtils.set(req, "accessToken", tokens.getAccessToken());
+        } catch (IdentityVerificationException e) {
             e.printStackTrace();
             res.sendRedirect(req.getContextPath() + redirectOnFail);
             return;

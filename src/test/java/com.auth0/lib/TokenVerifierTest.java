@@ -3,11 +3,23 @@ package com.auth0.lib;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkProvider;
 import com.auth0.jwt.exceptions.InvalidClaimException;
+import org.bouncycastle.util.io.pem.PemReader;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Scanner;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -135,8 +147,39 @@ public class TokenVerifierTest {
         JwkProvider jwkProvider = mock(JwkProvider.class);
         Jwk jwk = mock(Jwk.class);
         when(jwkProvider.get("abc123")).thenReturn(jwk);
-        RSAPublicKey key = RequestProcessorFactory.readPublicKeyFromFile(RS_PUBLIC_KEY);
+        RSAPublicKey key = readPublicKeyFromFile(RS_PUBLIC_KEY);
         when(jwk.getPublicKey()).thenReturn(key);
         return jwkProvider;
+    }
+
+    private static RSAPublicKey readPublicKeyFromFile(final String path) throws IOException {
+        Scanner scanner = null;
+        PemReader pemReader = null;
+        try {
+            scanner = new Scanner(Paths.get(path));
+            if (scanner.hasNextLine() && scanner.nextLine().startsWith("-----BEGIN CERTIFICATE-----")) {
+                FileInputStream fs = new FileInputStream(path);
+                CertificateFactory fact = CertificateFactory.getInstance("X.509");
+                X509Certificate cer = (X509Certificate) fact.generateCertificate(fs);
+                PublicKey key = cer.getPublicKey();
+                fs.close();
+                return (RSAPublicKey) key;
+            } else {
+                pemReader = new PemReader(new FileReader(path));
+                byte[] keyBytes = pemReader.readPemObject().getContent();
+                KeyFactory kf = KeyFactory.getInstance("RSA");
+                EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+                return (RSAPublicKey) kf.generatePublic(keySpec);
+            }
+        } catch (Exception e) {
+            throw new IOException("Couldn't parse the RSA Public Key / Certificate file.", e);
+        } finally {
+            if (scanner != null) {
+                scanner.close();
+            }
+            if (pemReader != null) {
+                pemReader.close();
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-package com.auth0;
+package com.auth0.example;
 
 import com.auth0.lib.SessionUtils;
 
@@ -6,8 +6,6 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-
-import static com.auth0.ConfigUtils.readLocalRequiredParameter;
 
 /**
  * Filter class to check if a valid session exists. This will be true if the User Id is present.
@@ -24,7 +22,7 @@ public class Auth0Filter implements Filter {
      */
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        onFailRedirectTo = readLocalRequiredParameter("com.auth0.redirect_on_authentication_error", filterConfig);
+        onFailRedirectTo = ConfigUtils.readLocalRequiredParameter("com.auth0.redirect_on_authentication_error", filterConfig);
     }
 
     /**
@@ -60,8 +58,8 @@ public class Auth0Filter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain next) throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
-        String userId = SessionUtils.getSessionUserId(req);
-        if (userId == null) {
+        String accessToken = (String) SessionUtils.get(req, "accessToken");
+        if (accessToken == null) {
             onReject(res);
             return;
         }
@@ -69,6 +67,5 @@ public class Auth0Filter implements Filter {
     }
 
     @Override
-    public void destroy() {
-    }
+    public void destroy() {}
 }

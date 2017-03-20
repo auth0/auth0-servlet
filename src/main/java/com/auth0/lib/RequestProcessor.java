@@ -1,11 +1,20 @@
 package com.auth0.lib;
 
+import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
+import com.auth0.json.auth.TokenHolder;
+import com.auth0.json.auth.UserInfo;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import org.apache.commons.lang3.Validate;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.List;
+
+import static com.auth0.lib.IdentityVerificationException.*;
+import static com.auth0.lib.InvalidRequestException.INVALID_STATE_ERROR;
+import static com.auth0.lib.InvalidRequestException.MISSING_AUTHORIZATION_CODE_ERROR;
 
 /**
  * Main class to handle the Authorize Redirect request.
@@ -15,17 +24,46 @@ import javax.servlet.http.HttpServletRequest;
 class RequestProcessor {
 
     //Visible for testing
-    final APIClientHelper clientHelper;
+    final AuthAPI client;
+    final String responseType;
     final TokenVerifier verifier;
 
-    RequestProcessor(APIClientHelper clientHelper, TokenVerifier verifier) {
-        Validate.notNull(clientHelper);
-        this.clientHelper = clientHelper;
+    RequestProcessor(AuthAPI client, String responseType, TokenVerifier verifier) {
+        Validate.notNull(client);
+        Validate.notNull(responseType);
+        this.client = client;
+        this.responseType = responseType;
         this.verifier = verifier;
     }
 
-    RequestProcessor(APIClientHelper clientHelper) {
-        this(clientHelper, null);
+    List<String> getResponseType() {
+        return Arrays.asList(responseType.split(" "));
+    }
+
+    /**
+     * Builds an Auth0 Authorize Url ready to call with the given parameters.
+     *
+     * @param redirectUri the url to call with the authentication result.
+     * @param state       a valid state value.
+     * @param nonce       the nonce value that will be used if the response type contains 'id_token'. Can be null.
+     * @return the authorize url ready to call.
+     */
+    String buildAuthorizeUrl(String redirectUri, String state, String nonce) {
+        String authorizeUrl = client
+                .authorizeUrl(redirectUri)
+                .withState(state)
+                .build();
+
+        //TODO: Use next auth0-java release
+        authorizeUrl = authorizeUrl.replace("response_type=code", "response_type=" + responseType);
+        List<String> responseTypeList = getResponseType();
+        if (responseTypeList.contains("id_token")) {
+            authorizeUrl = authorizeUrl.concat("&nonce=" + nonce);
+        }
+        if (responseTypeList.contains("token") || responseTypeList.contains("id_token")) {
+            authorizeUrl = authorizeUrl.concat("&response_mode=form_post");
+        }
+        return authorizeUrl;
     }
 
     /**
@@ -38,9 +76,9 @@ class RequestProcessor {
      * 5). Clearing the stored state value.
      * 6). Handling success and any failure outcomes.
      *
-     * @throws ProcessorException if an error occurred while processing the request
+     * @throws IdentityVerificationException if an error occurred while processing the request
      */
-    Tokens process(HttpServletRequest req) throws ProcessorException {
+    Tokens process(HttpServletRequest req) throws IdentityVerificationException {
         assertNoError(req);
         assertValidState(req);
 
@@ -49,30 +87,39 @@ class RequestProcessor {
 
         String userId;
         if (authorizationCode == null && verifier == null) {
-            throw new ProcessorException("Authorization Code missing from the request and Implicit Grant not allowed.");
+            throw new InvalidRequestException(MISSING_AUTHORIZATION_CODE_ERROR, "Authorization Code is missing from the request and Implicit Grant is not allowed.");
         } else if (verifier != null) {
-            String expectedNonce = SessionUtils.removeSessionNonce(req);
-            try {
-                userId = verifier.verifyNonce(tokens.getIdToken(), expectedNonce);
-            } catch (JwkException | JWTVerificationException e) {
-                throw new ProcessorException("An error occurred while trying to verify the Id Token.", e);
+            if (getResponseType().contains("id_token")) {
+                String expectedNonce = RandomStorage.removeSessionNonce(req);
+                try {
+                    userId = verifier.verifyNonce(tokens.getIdToken(), expectedNonce);
+                } catch (JwkException e) {
+                    throw new IdentityVerificationException(JWT_MISSING_PUBLIC_KEY_ERROR, "An error occurred while trying to verify the Id Token.", e);
+                } catch (JWTVerificationException e) {
+                    throw new IdentityVerificationException(JWT_VERIFICATION_ERROR, "An error occurred while trying to verify the Id Token.", e);
+                }
+            } else {
+                try {
+                    userId = fetchUserId(tokens.getAccessToken());
+                } catch (Auth0Exception e) {
+                    throw new IdentityVerificationException(API_ERROR, "An error occurred while trying to verify the Access Token.", e);
+                }
             }
         } else {
             String redirectUri = req.getRequestURL().toString();
             try {
                 Tokens latestTokens = exchangeCodeForTokens(authorizationCode, redirectUri);
                 tokens = mergeTokens(tokens, latestTokens);
-                userId = fetchUserId(tokens);
+                userId = fetchUserId(tokens.getAccessToken());
             } catch (Auth0Exception e) {
-                throw new ProcessorException("Couldn't exchange the Authorization Code for Auth0 Tokens", e);
+                throw new IdentityVerificationException(API_ERROR, "An error occurred while exchanging the Authorization Code for Auth0 Tokens.", e);
             }
         }
 
         if (userId == null) {
-            throw new ProcessorException("Couldn't obtain the User Id.");
+            throw new IdentityVerificationException("An error occurred while trying to verify the user identity: The 'sub' claim contained in the token was null.");
         }
 
-        SessionUtils.setSessionUserId(req, userId);
         return tokens;
     }
 
@@ -91,12 +138,13 @@ class RequestProcessor {
      * Checks for the presence of an error in the request parameters
      *
      * @param req the request
-     * @throws ProcessorException if the request contains an error
+     * @throws InvalidRequestException if the request contains an error
      */
-    private void assertNoError(HttpServletRequest req) throws ProcessorException {
+    private void assertNoError(HttpServletRequest req) throws InvalidRequestException {
         String error = req.getParameter("error");
         if (error != null) {
-            throw new ProcessorException("The request contains an error: " + error);
+            String errorDescription = req.getParameter("error_description");
+            throw new InvalidRequestException(error, errorDescription);
         }
     }
 
@@ -104,43 +152,47 @@ class RequestProcessor {
      * Checks whether the state persisted in the session matches the state value received in the request parameters.
      *
      * @param req the request
-     * @throws ProcessorException if the request contains a different state from the expected one
+     * @throws InvalidRequestException if the request contains a different state from the expected one
      */
-    private void assertValidState(HttpServletRequest req) throws ProcessorException {
+    private void assertValidState(HttpServletRequest req) throws InvalidRequestException {
         String stateFromRequest = req.getParameter("state");
-        boolean valid = SessionUtils.checkSessionState(req, stateFromRequest);
+        boolean valid = RandomStorage.checkSessionState(req, stateFromRequest);
         if (!valid) {
-            throw new ProcessorException("The request contains an invalid state");
+            throw new InvalidRequestException(INVALID_STATE_ERROR, "The received state doesn't match the expected one.");
         }
     }
 
     /**
-     * Calls the {@link APIClientHelper#exchangeCodeForTokens(String, String)} to request a Code Exchange.
+     * Calls the Auth0 Authentication API to perform a Code Exchange.
      *
-     * @param authorizationCode the authorization code received in the login request.
-     * @param redirectUri       the redirect uri sent on the login.
-     * @return a new instance of Tokens wrapping the values present in the response.
-     * @throws Auth0Exception if the call to the Auth0 API failed.
+     * @param authorizationCode the code received on the login response.
+     * @param redirectUri       the redirect uri used on login request.
+     * @return a new instance of {@link Tokens} with the received credentials.
+     * @throws Auth0Exception if the request to the Auth0 server failed.
+     * @see AuthAPI#exchangeCode(String, String)
      */
     private Tokens exchangeCodeForTokens(String authorizationCode, String redirectUri) throws Auth0Exception {
-        Validate.notNull(authorizationCode);
-        Validate.notNull(redirectUri);
-
-        return clientHelper.exchangeCodeForTokens(authorizationCode, redirectUri);
+        TokenHolder holder = client
+                .exchangeCode(authorizationCode, redirectUri)
+                .execute();
+        return new Tokens(holder.getAccessToken(), holder.getIdToken(), holder.getRefreshToken(), holder.getTokenType(), holder.getExpiresIn());
     }
 
     /**
-     * Calls the {@link APIClientHelper#fetchUserId(String)} to request the User Id of a given token.
+     * Calls the Auth0 Authentication API to get the User Id.
      *
-     * @param tokens the tokens to get the user id from.
-     * @return the user id
-     * @throws Auth0Exception if the call to the Auth0 API failed.
+     * @param accessToken the access token to get the user id for.
+     * @return the user id.
+     * @throws Auth0Exception if the request to the Auth0 server failed.
+     * @see AuthAPI#userInfo(String)
      */
-    private String fetchUserId(Tokens tokens) throws Auth0Exception {
-        Validate.notNull(tokens.getAccessToken());
-
-        return clientHelper.fetchUserId(tokens.getAccessToken());
+    private String fetchUserId(String accessToken) throws Auth0Exception {
+        UserInfo info = client
+                .userInfo(accessToken)
+                .execute();
+        return info.getValues().containsKey("sub") ? (String) info.getValues().get("sub") : null;
     }
+
 
     /**
      * Used to keep the best version of each token. If present, latest tokens will always be better than the first ones.
