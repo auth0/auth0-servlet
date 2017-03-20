@@ -356,10 +356,11 @@ public class RequestProcessorTest {
         assertThat(authorizeUrl, containsString("response_type=code"));
         assertThat(authorizeUrl, containsString("state=state"));
         assertThat(authorizeUrl, not(containsString("nonce=nonce")));
+        assertThat(authorizeUrl, not(containsString("response_mode=form_post")));
     }
 
     @Test
-    public void shouldBuildAuthorizeUrlWithNonceIfResponseTypeIsIdToken() throws Exception {
+    public void shouldBuildAuthorizeUrlWithNonceAndFormPostIfResponseTypeIsIdToken() throws Exception {
         AuthAPI client = new AuthAPI("me.auth0.com", "clientId", "clientSecret");
         RequestProcessor handler = new RequestProcessor(client, "id_token", null);
         String authorizeUrl = handler.buildAuthorizeUrl("https://redirect.uri/here", "state", "nonce");
@@ -371,6 +372,22 @@ public class RequestProcessorTest {
         assertThat(authorizeUrl, containsString("response_type=id_token"));
         assertThat(authorizeUrl, containsString("state=state"));
         assertThat(authorizeUrl, containsString("nonce=nonce"));
+        assertThat(authorizeUrl, containsString("response_mode=form_post"));
+    }
+
+    @Test
+    public void shouldBuildAuthorizeUrlWithFormPostIfResponseTypeIsToken() throws Exception {
+        AuthAPI client = new AuthAPI("me.auth0.com", "clientId", "clientSecret");
+        RequestProcessor handler = new RequestProcessor(client, "token", null);
+        String authorizeUrl = handler.buildAuthorizeUrl("https://redirect.uri/here", "state", "nonce");
+
+        assertThat(authorizeUrl, is(notNullValue()));
+        assertThat(authorizeUrl, CoreMatchers.startsWith("https://me.auth0.com/authorize?"));
+        assertThat(authorizeUrl, containsString("client_id=clientId"));
+        assertThat(authorizeUrl, containsString("redirect_uri=https://redirect.uri/here"));
+        assertThat(authorizeUrl, containsString("response_type=token"));
+        assertThat(authorizeUrl, containsString("state=state"));
+        assertThat(authorizeUrl, containsString("response_mode=form_post"));
     }
 
     // Utils

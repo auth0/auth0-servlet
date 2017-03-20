@@ -50,9 +50,14 @@ class RequestProcessor {
                 .withState(state)
                 .build();
 
+        //TODO: Use next auth0-java release
         authorizeUrl = authorizeUrl.replace("response_type=code", "response_type=" + responseType);
-        if (getResponseType().contains("id_token")) {
+        List<String> responseTypeList = getResponseType();
+        if (responseTypeList.contains("id_token")) {
             authorizeUrl = authorizeUrl.concat("&nonce=" + nonce);
+        }
+        if (responseTypeList.contains("token") || responseTypeList.contains("id_token")) {
+            authorizeUrl = authorizeUrl.concat("&response_mode=form_post");
         }
         return authorizeUrl;
     }
