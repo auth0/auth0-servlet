@@ -4,6 +4,7 @@ import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.auth.UserInfo;
+import com.auth0.jwk.JwkException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.net.AuthRequest;
 import com.auth0.net.Request;
@@ -82,7 +83,7 @@ public class RequestProcessorTest {
     @Test
     public void shouldThrowIfRequestHasInvalidState() throws Exception {
         exception.expect(InvalidRequestException.class);
-        exception.expectMessage("The request contains an error: invalid state");
+        exception.expectMessage("The request contains an error: a0.invalid_state");
 
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
@@ -98,7 +99,7 @@ public class RequestProcessorTest {
     @Test
     public void shouldThrowOnMissingCodeAndImplicitGrantNotAllowed() throws Exception {
         exception.expect(InvalidRequestException.class);
-        exception.expectMessage("The request contains an error: missing code");
+        exception.expectMessage("The request contains an error: a0.missing_authorization_code");
 
         Map<String, Object> params = new HashMap<>();
         params.put("state", "1234");
@@ -135,6 +136,7 @@ public class RequestProcessorTest {
     @Test
     public void shouldThrowOnFailToVerifyIdTokenOnImplicitGrant() throws Exception {
         exception.expect(IdentityVerificationException.class);
+        exception.expect(IdentityVerificationExceptionMatcher.hasCode("a0.invalid_jwt_error"));
         exception.expectMessage("An error occurred while trying to verify the Id Token.");
 
         Map<String, Object> params = new HashMap<>();
@@ -153,8 +155,30 @@ public class RequestProcessorTest {
     }
 
     @Test
+    public void shouldThrowOnFailToGetPublicKeyOnImplicitGrant() throws Exception {
+        exception.expect(IdentityVerificationException.class);
+        exception.expect(IdentityVerificationExceptionMatcher.hasCode("a0.missing_jwt_public_key_error"));
+        exception.expectMessage("An error occurred while trying to verify the Id Token.");
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("state", "1234");
+        params.put("access_token", "theAccessToken");
+        params.put("id_token", "theIdToken");
+        HttpServletRequest req = getRequest(params);
+        RandomStorage.setSessionState(req, "1234");
+        RandomStorage.setSessionNonce(req, "nnnccc");
+        when(verifier.verifyNonce("theIdToken", "nnnccc")).thenThrow(JwkException.class);
+
+        RequestProcessor handler = new RequestProcessor(client, "token id_token", verifier);
+        handler.process(req);
+
+        verify(client, never()).userInfo(anyString());
+    }
+
+    @Test
     public void shouldThrowIfNullUserIdOnVerifyIdTokenOnImplicitGrant() throws Exception {
         exception.expect(IdentityVerificationException.class);
+        exception.expect(IdentityVerificationExceptionMatcher.hasCode("a0.unknown_error"));
         exception.expectMessage("An error occurred while trying to verify the user identity: The 'sub' claim contained in the token was null.");
 
         Map<String, Object> params = new HashMap<>();
@@ -195,6 +219,7 @@ public class RequestProcessorTest {
     @Test
     public void shouldThrowOnFailToVerifyAccessTokenOnImplicitGrant() throws Exception {
         exception.expect(IdentityVerificationException.class);
+        exception.expect(IdentityVerificationExceptionMatcher.hasCode("a0.api_error"));
         exception.expectMessage("An error occurred while trying to verify the Access Token.");
 
         Map<String, Object> params = new HashMap<>();
@@ -214,6 +239,7 @@ public class RequestProcessorTest {
     @Test
     public void shouldThrowIfNullUserIdOnFailToVerifyAccessTokenOnImplicitGrant() throws Exception {
         exception.expect(IdentityVerificationException.class);
+        exception.expect(IdentityVerificationExceptionMatcher.hasCode("a0.unknown_error"));
         exception.expectMessage("An error occurred while trying to verify the user identity: The 'sub' claim contained in the token was null.");
 
         Map<String, Object> params = new HashMap<>();
@@ -286,6 +312,7 @@ public class RequestProcessorTest {
     @Test
     public void shouldThrowOnExchangeTheAuthorizationCodeOnCodeGrant() throws Exception {
         exception.expect(IdentityVerificationException.class);
+        exception.expect(IdentityVerificationExceptionMatcher.hasCode("a0.api_error"));
         exception.expectMessage("An error occurred while exchanging the Authorization Code for Auth0 Tokens.");
 
         Map<String, Object> params = new HashMap<>();
@@ -305,6 +332,7 @@ public class RequestProcessorTest {
     @Test
     public void shouldThrowOnFetchTheUserIdOnCodeGrant() throws Exception {
         exception.expect(IdentityVerificationException.class);
+        exception.expect(IdentityVerificationExceptionMatcher.hasCode("a0.api_error"));
         exception.expectMessage("An error occurred while exchanging the Authorization Code for Auth0 Tokens.");
 
         Map<String, Object> params = new HashMap<>();
@@ -326,6 +354,7 @@ public class RequestProcessorTest {
     @Test
     public void shouldFailToGetTheUserIdOnCodeGrant() throws Exception {
         exception.expect(IdentityVerificationException.class);
+        exception.expect(IdentityVerificationExceptionMatcher.hasCode("a0.unknown_error"));
         exception.expectMessage("An error occurred while trying to verify the user identity: The 'sub' claim contained in the token was null.");
         Map<String, Object> params = new HashMap<>();
         params.put("code", "abc123");
