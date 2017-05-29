@@ -24,7 +24,7 @@ compile 'com.auth0:auth0-servlet:3.4.0'
 
 ## Getting started
 
-Download or clone this repository and follow the instructions below to setup the sample.
+This sample demonstrates how to use Auth0 to perform authentication using the `mvc-auth-commons` library. Download or clone this repository and follow the instructions below to setup the sample.
 
 ### Auth0 Dashboard
 1. On the [Auth0 Dashboard](https://manage.auth0.com/#/clients) create a new Client of type `Regular Web Application`. 
@@ -53,7 +53,7 @@ Set the client values in the `src/main/webapp/WEB-INF/web.xml` file. They are re
 </context-param>
 ```
 
-By default a Code Grant flow with Response Type `code` will be executed. Change the requested Response Type in the `AuthenticationControllerProvider` class to `token` or `id_token` to use Implicit Grant. i.e.:
+It will request by default a `code` Response Type and later execute a Code Exchange. You can modify this behavior by changing the Response Type in the `AuthenticationControllerProvider` class to `token` or `id_token` to use Implicit Grant. i.e.:
 
 ```java
 AuthenticationController.newBuilder(domain, clientId, clientSecret)
@@ -61,9 +61,7 @@ AuthenticationController.newBuilder(domain, clientId, clientSecret)
     .build();
 ```
 
-Keep in mind that the server uses `POST` to return a Implicit Grant result, you should handle that on your controller too.
- 
-
+Keep in mind that the server uses `POST` to return an Implicit Grant result, you should handle that on your controller too.
 
 ### Running the sample
 
@@ -73,7 +71,7 @@ Open a terminal, go to the project root directory and run the following command:
 ./gradlew clean appRun
 ```
 
-The server will be accessible on https://localhost:8080/portal/home. After logging in you should see your `user id` in the header.
+The server will be accessible on https://localhost:8080/portal/home. After logging in you should see the `token` in the header.
 
 
 ## Issue Reporting
