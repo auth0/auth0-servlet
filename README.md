@@ -1,4 +1,6 @@
 # Auth0 Servlet
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fauth0%2Fauth0-servlet.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fauth0%2Fauth0-servlet?ref=badge_shield)
+
 
 This project is no longer maintained and has been discontinued in favor of [auth0-java-mvc-commons](https://github.com/auth0/auth0-java-mvc-common) library. An example on how to use that library with **Java Servlet** can be found [here](https://auth0.com/docs/quickstart/webapp/java).
 
@@ -49,3 +51,6 @@ If you have found a bug or if you have a feature request, please report them at 
 ## License
 
 This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more info.
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fauth0%2Fauth0-servlet.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fauth0%2Fauth0-servlet?ref=badge_large)
